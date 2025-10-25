@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>ITS Actionfi — IT Inventory</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <!-- Fonts & stylesheet -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <header class="header" style="align-items:flex-start;">
+      <div class="brand">
+        <span class="brand-accent">ITS</span>
+        <span>Actionfi — IT Inventory</span>
+      </div>
+
+      <!-- pill search -->
+      <div class="search-pill" role="search" style="max-width:520px;">
+        <span aria-hidden="true">🔍</span>
+        <input id="search_q_header" placeholder="Search assets or employees" />
+        <button id="searchBtnHeader" class="btn-submit" style="margin-left:8px;">Search</button>
+      </div>
+    </header>
+
+    <!-- Hero (panel matched to forms) -->
+    <section class="hero" aria-label="Hero">
+      <div class="hero-card">
+        <h1>Manage devices, effortlessly.</h1>
+        <p class="lead" style="color:var(--muted);margin-bottom:16px">
+          Add assets and employees quickly, assign equipment, and search across inventory with ease.
+        </p>
+
+        <div class="cta-row" style="margin-top:6px">
+          <button class="btn-submit" id="heroAction" type="button">Get Started</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Panels: Add/Edit Employee | Add Asset -->
+    <div class="panels" role="region" aria-label="Forms">
+      <div class="panel" aria-labelledby="emp-heading">
+        <h2 id="emp-heading">Add / Edit Employee</h2>
+
+        <div class="field">
+          <label for="emp_id">Employee ID</label>
+          <input id="emp_id" placeholder="E.g. E1001" />
+        </div>
+
+        <div class="field">
+          <label for="emp_name">Full name</label>
+          <input id="emp_name" placeholder="Full name" />
+        </div>
+
+        <div class="field">
+          <label for="emp_email">Email (optional)</label>
+          <input id="emp_email" placeholder="Email" />
+        </div>
+
+        <div class="helper-row">
+          <button id="addEmpBtn" class="btn-submit brand" type="button">Add Employee</button>
+        </div>
+      </div>
+
+      <div class="panel" aria-labelledby="asset-heading">
+        <h2 id="asset-heading">Add Asset</h2>
+
+        <div class="field">
+          <label for="asset_number">Asset Number</label>
+          <input id="asset_number" placeholder="ASSET-0001" />
+        </div>
+
+        <!-- CATEGORY select (replaces 'Type' input) -->
+        <div class="field">
+          <label for="asset_category">Category</label>
+          <select id="asset_category">
+            <option value="Laptop">Laptop</option>
+            <option value="Desktop">Desktop</option>
+            <option value="Keyboard">Keyboard</option>
+            <option value="Mouse">Mouse</option>
+            <option value="Monitor">Monitor</option>
+            <option value="Others">Others</option>
+          </select>
+        </div>
+
+        <!-- Hidden input shown only when 'Others' selected -->
+        <div class="field" id="asset_other_wrap" style="display:none;">
+          <label for="asset_other">Other category (specify)</label>
+          <input id="asset_other" placeholder="Specify category" />
+        </div>
+
+        <div class="field">
+          <label for="serial_number">Serial Number</label>
+          <input id="serial_number" placeholder="SN12345" />
+        </div>
+
+        <div class="field">
+          <label for="assign_select">Assign to (employee)</label>
+          <select id="assign_select"><option value="">-- none --</option></select>
+        </div>
+
+        <div class="helper-row">
+          <button id="addAssetBtn" class="btn-submit" type="button">Add Asset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search section -->
+    <section class="search-section" aria-label="Search assets">
+      <h2>Search Assets</h2>
+
+      <div class="search-controls" style="margin-top:8px;">
+        <input id="search_q" placeholder="search by asset number, serial, category or employee" />
+        <button id="searchBtn" class="btn-submit" type="button">Search</button>
+        <button id="resetBtn" class="btn-submit plain" type="button">Reset</button>
+      </div>
+
+      <div id="results" class="results" style="margin-top:12px"></div>
+    </section>
+
+  </div>
+
+  <!-- App script (updated app.js below) -->
+  <script src="/app.js"></script>
+
+  <!-- Small client glue -->
+  <script>
+    // header search triggers main search
+    document.getElementById('searchBtnHeader').addEventListener('click', () => {
+      const q = document.getElementById('search_q_header').value.trim();
+      if (!q) return;
+      document.getElementById('search_q').value = q;
+      document.getElementById('searchBtn').click();
+    });
+
+    // show/hide 'other' category input based on select
+    const categorySelect = document.getElementById('asset_category');
+    const otherWrap = document.getElementById('asset_other_wrap');
+    function updateOtherVisibility() {
+      if (categorySelect.value === 'Others') {
+        otherWrap.style.display = 'block';
+      } else {
+        otherWrap.style.display = 'none';
+      }
+    }
+    categorySelect.addEventListener('change', updateOtherVisibility);
+    // init visibility on load
+    updateOtherVisibility();
+  </script>
+</body>
+</html>
