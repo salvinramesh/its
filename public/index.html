@@ -14,15 +14,17 @@
 
     <!-- Header -->
     <header class="header" style="align-items:flex-start;">
-      <div class="brand">
+      <!-- clickable brand -> goes to home / -->
+      <a href="/" class="brand" style="text-decoration:none; color:inherit;">
         <span class="brand-accent">ITS</span>
         <span>Actionfi — IT Inventory</span>
-      </div>
+      </a>
 
       <!-- pill search -->
       <div class="search-pill" role="search" style="max-width:520px;">
         <span aria-hidden="true">🔍</span>
         <input id="search_q_header" placeholder="Search assets or employees" />
+        <!-- note: this now navigates to search.html -->
         <button id="searchBtnHeader" class="btn-submit" style="margin-left:8px;">Search</button>
       </div>
     </header>
@@ -74,7 +76,6 @@
           <input id="asset_number" placeholder="ASSET-0001" />
         </div>
 
-        <!-- CATEGORY select (replaces 'Type' input) -->
         <div class="field">
           <label for="asset_category">Category</label>
           <select id="asset_category">
@@ -87,7 +88,6 @@
           </select>
         </div>
 
-        <!-- Hidden input shown only when 'Others' selected -->
         <div class="field" id="asset_other_wrap" style="display:none;">
           <label for="asset_other">Other category (specify)</label>
           <input id="asset_other" placeholder="Specify category" />
@@ -124,32 +124,56 @@
 
   </div>
 
-  <!-- App script (updated app.js below) -->
+  <!-- App script (your existing app.js) -->
   <script src="/app.js"></script>
 
-  <!-- Small client glue -->
+  <!-- Header search now navigates to search.html?q=... and Get Started behavior -->
   <script>
-    // header search triggers main search
+    // top-bar header search navigates to /search.html?q=...
     document.getElementById('searchBtnHeader').addEventListener('click', () => {
       const q = document.getElementById('search_q_header').value.trim();
       if (!q) return;
-      document.getElementById('search_q').value = q;
-      document.getElementById('searchBtn').click();
+      const url = '/search.html?q=' + encodeURIComponent(q);
+      window.location.href = url;
     });
 
-    // show/hide 'other' category input based on select
-    const categorySelect = document.getElementById('asset_category');
-    const otherWrap = document.getElementById('asset_other_wrap');
-    function updateOtherVisibility() {
-      if (categorySelect.value === 'Others') {
-        otherWrap.style.display = 'block';
-      } else {
-        otherWrap.style.display = 'none';
-      }
+    // Smoothly scroll to Employee ID and focus when user clicks Get Started
+    document.getElementById('heroAction').addEventListener('click', (e) => {
+      e.preventDefault();
+      const empInput = document.getElementById('emp_id');
+      if (!empInput) return;
+      // Scroll to center of viewport, then focus
+      empInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // focus after a tiny delay to avoid fighting the scroll animation on some browsers
+      setTimeout(() => {
+        try { empInput.focus({ preventScroll: true }); } catch (err) { empInput.focus(); }
+      }, 250);
+    });
+
+    // Convenience: pressing Enter in Employee ID moves to Full name
+    const empIdInput = document.getElementById('emp_id');
+    if (empIdInput) {
+      empIdInput.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          const nameInput = document.getElementById('emp_name');
+          if (nameInput) {
+            nameInput.focus();
+            // optionally select text if any
+            nameInput.select && nameInput.select();
+          }
+        }
+      });
     }
-    categorySelect.addEventListener('change', updateOtherVisibility);
-    // init visibility on load
-    updateOtherVisibility();
+
+    // Keep the rest of the small glue for asset category visibility
+    const cat = document.getElementById('asset_category');
+    const otherWrap = document.getElementById('asset_other_wrap');
+    if (cat && otherWrap) {
+      function updateOtherVisibility() { otherWrap.style.display = cat.value === 'Others' ? 'block' : 'none'; }
+      updateOtherVisibility();
+      cat.addEventListener('change', updateOtherVisibility);
+    }
   </script>
 </body>
 </html>

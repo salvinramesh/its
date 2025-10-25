@@ -1,4 +1,4 @@
-// public/app.js - updated to use Category select + Others textbox
+// public/app.js (updated to include Edit modal)
 async function api(path, opts) {
   const res = await fetch(path, opts);
   if(!res.ok) {
@@ -10,6 +10,7 @@ async function api(path, opts) {
 
 async function refreshEmployees() {
   const sel = document.getElementById('assign_select');
+  if (!sel) return;
   sel.innerHTML = '<option value="">-- none --</option>';
   const emps = await api('/api/employees');
   emps.forEach(e => {
@@ -70,6 +71,165 @@ document.getElementById('addAssetBtn').addEventListener('click', async () => {
   } catch(e) { alert('Error: '+e.message); }
 });
 
+/* ---------- Edit modal helpers ---------- */
+
+async function openEditModal(asset) {
+  // ensure we have current employees list for assignment
+  const emps = await api('/api/employees');
+
+  // create overlay
+  let overlay = document.querySelector('._modal-overlay');
+  if (overlay) overlay.remove(); // remove existing (safety)
+  overlay = document.createElement('div');
+  overlay.className = '_modal-overlay';
+
+  const modal = document.createElement('div');
+  modal.className = '_modal';
+
+  modal.innerHTML = `
+    <h3>Edit Asset</h3>
+    <div class="row">
+      <div class="col">
+        <label>Asset Number</label>
+        <input id="edit_asset_number" value="${escapeHtml(asset.asset_number || '')}" />
+      </div>
+      <div class="col">
+        <label>Serial Number</label>
+        <input id="edit_serial" value="${escapeHtml(asset.serial_number || '')}" />
+      </div>
+    </div>
+
+    <div style="height:12px"></div>
+
+    <div class="row">
+      <div class="col">
+        <label>Category</label>
+        <select id="edit_category">
+          <option> Laptop </option>
+          <option> Desktop </option>
+          <option> Keyboard </option>
+          <option> Mouse </option>
+          <option> Monitor </option>
+          <option> Others </option>
+        </select>
+      </div>
+      <div class="col" id="edit_other_col" style="display:none;">
+        <label>Other category (specify)</label>
+        <input id="edit_other" />
+      </div>
+    </div>
+
+    <div style="height:12px"></div>
+
+    <div class="row">
+      <div class="col">
+        <label>Assign to (employee)</label>
+        <select id="edit_assigned"><option value="">-- none --</option></select>
+      </div>
+      <div class="col" style="display:flex;align-items:flex-end;justify-content:flex-end">
+        <div class="actions" style="display:flex;gap:8px">
+          <button id="editCancel" class="btn-submit plain">Cancel</button>
+          <button id="editSave" class="btn-submit">Save</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  // populate employees dropdown
+  const editAssigned = modal.querySelector('#edit_assigned');
+  emps.forEach(e => {
+    const opt = document.createElement('option');
+    opt.value = e.id;
+    opt.textContent = `${e.name} (${e.employee_id})`;
+    editAssigned.appendChild(opt);
+  });
+
+  // set current values
+  const editCategory = modal.querySelector('#edit_category');
+  const currentType = (asset.type || '').trim();
+  // set select by matching ignoring case; fallback to 'Others' and fill edit_other
+  let matched = false;
+  Array.from(editCategory.options).forEach(o => {
+    if (o.value.trim().toLowerCase() === currentType.toLowerCase()) {
+      editCategory.value = o.value;
+      matched = true;
+    }
+  });
+  const editOtherCol = modal.querySelector('#edit_other_col');
+  const editOther = modal.querySelector('#edit_other');
+  if (!matched) {
+    editCategory.value = 'Others';
+    editOtherCol.style.display = 'block';
+    editOther.value = currentType;
+  } else {
+    editOtherCol.style.display = 'none';
+    editOther.value = '';
+  }
+
+  // set assigned id (asset.assigned_to exists as a numeric id)
+  if (asset.assigned_to) {
+    editAssigned.value = asset.assigned_to;
+  } else {
+    editAssigned.value = '';
+  }
+
+  // event: show/hide other input
+  editCategory.addEventListener('change', () => {
+    if (editCategory.value === 'Others') editOtherCol.style.display = 'block';
+    else { editOtherCol.style.display = 'none'; editOther.value = ''; }
+  });
+
+  // Cancel button
+  modal.querySelector('#editCancel').addEventListener('click', () => {
+    overlay.remove();
+  });
+
+  // Save button
+  modal.querySelector('#editSave').addEventListener('click', async () => {
+    const newAssetNumber = modal.querySelector('#edit_asset_number').value.trim();
+    const newSerial = modal.querySelector('#edit_serial').value.trim();
+    const categoryVal = modal.querySelector('#edit_category').value;
+    const otherVal = modal.querySelector('#edit_other').value.trim();
+    const assignedVal = modal.querySelector('#edit_assigned').value || null;
+
+    let finalType = categoryVal;
+    if (categoryVal === 'Others') {
+      if (!otherVal) { alert('Please specify other category'); return; }
+      finalType = otherVal;
+    }
+
+    if (!newAssetNumber || !finalType) { alert('Asset number and category required'); return; }
+
+    try {
+      await api(`/api/assets/${asset.id}`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          asset_number: newAssetNumber,
+          serial_number: newSerial,
+          type: finalType,
+          assigned_to: assignedVal
+        })
+      });
+      overlay.remove();
+      loadAll();
+    } catch (err) {
+      alert('Save failed: ' + err.message);
+    }
+  });
+}
+
+// escape helper to avoid injecting quotes
+function escapeHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* ---------- Table rendering with Edit/Delete buttons ---------- */
+
 async function renderTable(rows) {
   const div = document.getElementById('results');
   if(!rows.length) { div.innerHTML = '<p class="small">No results</p>'; return; }
@@ -95,12 +255,28 @@ async function renderTable(rows) {
 
     const tdActions = document.createElement('td');
     tdActions.style.whiteSpace = 'nowrap';
+    tdActions.style.display = 'flex';
+    tdActions.style.gap = '8px';
+    tdActions.style.alignItems = 'center';
+    tdActions.style.justifyContent = 'flex-end';
 
+    // Edit button
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.className = 'btn-edit';
+    editBtn.textContent = 'Edit';
+    editBtn.addEventListener('click', () => {
+      openEditModal(r);
+    });
+
+    // Delete button
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
     delBtn.className = 'btn-delete small';
     delBtn.setAttribute('data-id', r.id);
     delBtn.textContent = 'Delete';
+
+    tdActions.appendChild(editBtn);
     tdActions.appendChild(delBtn);
 
     tr.appendChild(tdAsset);
@@ -135,6 +311,8 @@ async function loadAll() {
   const rows = await api('/api/assets');
   renderTable(rows);
 }
+
+/* ---------- Search & other handlers ---------- */
 
 document.getElementById('searchBtn').addEventListener('click', async () => {
   const q = document.getElementById('search_q').value.trim();

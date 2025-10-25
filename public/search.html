@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Search — ITS Actionfi</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="header" style="align-items:flex-start;">
+      <!-- clickable brand -> goes to home / -->
+      <a href="/" class="brand" style="text-decoration:none; color:inherit;">
+        <span class="brand-accent">ITS</span>
+        <span>Actionfi — Search</span>
+      </a>
+
+      <div class="search-pill" role="search" style="max-width:520px;">
+        <span aria-hidden="true">🔍</span>
+        <input id="search_q_top" placeholder="Search assets or employees" />
+        <button id="goSearchBtn" class="btn-submit" style="margin-left:8px;">Search</button>
+      </div>
+    </header>
+
+    <section style="margin-top:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <h1 style="margin:0">Search results</h1>
+        <div>
+          <button id="backBtn" class="btn-submit plain">Back</button>
+        </div>
+      </div>
+
+      <p class="small" id="searchInfo" style="margin-top:8px;color:var(--muted)"></p>
+
+      <div id="results" class="results" style="margin-top:12px"></div>
+    </section>
+  </div>
+
+  <script src="/search.js"></script>
+</body>
+</html>
