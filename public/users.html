@@ -2,118 +2,247 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Manage Users — ITS Actionfi</title>
+  <title>Users — ITS Actionfi</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css" />
   <style>
-    .page { max-width:980px; margin:28px auto; padding:0 16px; }
-    .card { background:#fff; border-radius:10px; padding:18px; box-shadow:0 6px 18px rgba(0,0,0,0.06); margin-bottom:16px; }
-    table { width:100%; border-collapse:collapse; margin-top:12px; }
-    th, td { padding:8px 10px; border-bottom:1px solid #f0f0f0; text-align:left; }
-    .muted { color:#666; font-size:0.9rem; }
+    /* Page layout */
+    .page { max-width:1100px; margin:28px auto; padding:0 16px; }
+    .header-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:12px; }
+    h1 { margin:0; font-size:28px; }
 
-    /* Buttons (matching homepage) */
-    .btn { font-weight:600; border:none; cursor:pointer; transition:all 0.15s ease; border-radius:10px; }
+    /* Card */
+    .card { background:#fff; border-radius:12px; padding:18px; box-shadow:0 10px 30px rgba(20,30,60,0.06); }
 
-    .btn-edit {
-      background:#fff;
-      border:1px solid #e6e9ee;
-      color:#111827;
-      box-shadow:0 2px 6px rgba(0,0,0,0.05);
-      padding:8px 14px;
-      border-radius:8px;
-      font-weight:600;
-      cursor:pointer;
+    /* Table */
+    table.users { width:100%; border-collapse:collapse; margin-top:8px; }
+    table.users thead th { text-align:left; padding:14px 12px; color:#6b7280; font-weight:600; font-size:14px; border-bottom:1px solid #f1f5f9; }
+    table.users tbody td { padding:14px 12px; border-bottom:1px solid #f8fafc; vertical-align:middle; color:#111827; }
+    table.users tbody tr:last-child td { border-bottom: none; }
+
+    /* Buttons (match homepage style) */
+    .btn {
+      display:inline-flex; align-items:center; justify-content:center;
+      padding:8px 12px; border-radius:10px; border:0; cursor:pointer;
+      font-weight:600; font-size:14px;
     }
-    .btn-edit:hover { background:#f9fafb; }
-
-    .btn-delete {
-      background:linear-gradient(90deg, #ff6b7a, #ff2b5b);
-      color:#fff;
-      box-shadow:0 8px 20px rgba(255,43,75,0.22);
-      padding:8px 14px;
-      border-radius:10px;
-      font-weight:700;
-      cursor:pointer;
+    .btn.primary {
+      background: linear-gradient(#3aa0ff,#2078f0); color:#fff; box-shadow:0 8px 22px rgba(32,120,240,0.14);
     }
-    .btn-delete:hover { opacity:0.95; }
-
-    .btn-back {
-      padding:8px 12px;
-      background:#f3f4f6;
-      border-radius:10px;
-      border:none;
-      color:#111827;
-      cursor:pointer;
-      font-weight:500;
-      box-shadow:0 2px 6px rgba(0,0,0,0.05);
+    .btn.ghost {
+      background:#fff; color:#111827; border:1px solid #eef2f6; box-shadow: 0 2px 6px rgba(0,0,0,0.03);
     }
-    .btn-back:hover { background:#e5e7eb; }
-
-    /* Pagination controls */
-    .pager {
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      margin-top:12px;
-      flex-wrap:wrap;
+    .btn.danger {
+      background: linear-gradient(#ff5b6b,#ff2b45); color:#fff; box-shadow:0 10px 30px rgba(255,43,69,0.12);
     }
-    .pager .left { display:flex; gap:8px; align-items:center; }
-    .pager .right { display:flex; gap:8px; align-items:center; }
-    .pager .pagebutton { padding:8px 10px; border-radius:8px; border:1px solid #e6e9ee; background:#fff; cursor:pointer; }
-    .pager .pagebutton[disabled] { opacity:0.6; cursor:default; }
+    .btn.small { padding:6px 10px; font-size:13px; border-radius:8px; }
 
-    .small-muted { color:#666; font-size:0.9rem; }
+    /* Edit / Delete visual like homepage */
+    .action-edit { background:#fff; color:#111827; border:1px solid #eef2f6; box-shadow:0 6px 18px rgba(16,24,40,0.03); border-radius:10px; padding:8px 12px; }
+    .action-delete { background: linear-gradient(#ff7a85,#ff3850); color:#fff; border-radius:10px; padding:8px 12px; box-shadow:0 12px 36px rgba(255,56,80,0.14); border:0; }
 
-    @media (max-width:640px) {
-      .pager { flex-direction:column; align-items:stretch; }
-      .pager .left, .pager .right { width:100%; justify-content:space-between; }
+    /* Pagination row */
+    .pagination-row { display:flex; justify-content:space-between; align-items:center; margin-top:18px; gap:12px; flex-wrap:wrap; }
+    .pagination-left { display:flex; align-items:center; gap:12px; }
+    .pagination-right { display:flex; align-items:center; gap:12px; }
+
+    .rows-per-page { display:inline-flex; align-items:center; gap:8px; color:#6b7280; font-size:14px; }
+    .rows-per-page select { padding:6px; border-radius:8px; border:1px solid #e6eef7; background:#fff; }
+
+    .pager-info { color:#6b7280; font-size:14px; }
+
+    /* pager buttons */
+    .pager-btn { padding:8px 12px; border-radius:8px; background:#fff; border:1px solid #eef2f6; cursor:pointer; box-shadow:0 3px 10px rgba(10,20,40,0.02); }
+    .pager-btn.primary { background: linear-gradient(#3aa0ff,#2078f0); color:#fff; border:0; box-shadow:0 8px 22px rgba(32,120,240,0.14); }
+    .pager-btn[disabled] { opacity:.45; cursor:not-allowed; box-shadow:none; }
+
+    /* Responsive tweaks */
+    @media (max-width:720px) {
+      .header-row { flex-direction:column; align-items:flex-start; }
+      .pagination-row { flex-direction:column; align-items:flex-start; }
+      table.users thead { display:none; }
+      table.users tbody td { display:block; padding:12px 10px; }
+      table.users tbody tr { margin-bottom:12px; background:transparent; border-radius:8px; box-shadow:none; }
+      .pagination-left, .pagination-right { width:100%; justify-content:space-between; }
     }
   </style>
 </head>
 <body>
   <div class="page">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <h2>Users</h2>
+    <div class="header-row">
+      <h1>Users</h1>
       <div>
-        <button id="backBtn" class="btn-back">Back</button>
+        <button id="backBtn" class="btn ghost">Back</button>
       </div>
     </div>
 
-    <div class="card">
-      <table id="usersTable" aria-live="polite">
-        <thead>
-          <tr><th>Employee ID</th><th>Name</th><th>Email</th><th style="text-align:right">Actions</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+    <div class="card" id="usersCard" aria-live="polite">
+      <div id="tableWrap">
+        <table class="users" aria-describedby="usersInfo">
+          <thead>
+            <tr>
+              <th style="width:18%">Employee ID</th>
+              <th style="width:36%">Name</th>
+              <th style="width:30%">Email</th>
+              <th style="width:16%; text-align:right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersTbody">
+            <!-- rows inserted here -->
+          </tbody>
+        </table>
+      </div>
 
-      <div class="pager" style="margin-top:14px">
-        <div class="left">
-          <div>
-            <label for="pageSizeSelect" class="small-muted">Rows per page</label>
-            <select id="pageSizeSelect">
-              <option value="10">10</option>
+      <div class="pagination-row" style="margin-top:18px;">
+        <div class="pagination-left">
+          <div class="rows-per-page">
+            <label for="perPageSelect">Rows per page</label>
+            <select id="perPageSelect" aria-label="Rows per page">
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
               <option value="25">25</option>
               <option value="50">50</option>
             </select>
           </div>
-          <div style="margin-left:12px" class="small-muted" id="rangeInfo"></div>
+
+          <div class="pager-info" id="pagerInfo">Showing 0–0 of 0</div>
         </div>
 
-        <div class="right">
-          <button id="prevPage" class="pagebutton">Prev</button>
-          <div class="small-muted" id="pageInfo">Page 1 / 1</div>
-          <button id="nextPage" class="pagebutton">Next</button>
+        <div class="pagination-right">
+          <button id="prevBtn" class="pager-btn" aria-label="Previous page">Prev</button>
+          <div class="pager-info" id="pageIndicator">Page 1 / 1</div>
+          <button id="nextBtn" class="pager-btn primary" aria-label="Next page">Next</button>
         </div>
       </div>
-
-      <div id="usersMsg" style="margin-top:8px;color:#666"></div>
     </div>
   </div>
 
-  <script src="/users.js"></script>
+  <script>
+    // Client-side pagination for /api/employees
+    async function api(path, opts) {
+      const res = await fetch(path, opts);
+      const txt = await res.text();
+      if (!res.ok) throw new Error(txt || res.statusText);
+      try { return JSON.parse(txt); } catch { return txt; }
+    }
+
+    // State
+    let employees = [];
+    let currentPage = 1;
+    let perPage = parseInt(document.getElementById('perPageSelect').value, 10) || 10;
+
+    const usersTbody = document.getElementById('usersTbody');
+    const pagerInfo = document.getElementById('pagerInfo');
+    const pageIndicator = document.getElementById('pageIndicator');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const perPageSelect = document.getElementById('perPageSelect');
+
+    // Fetch employees once
+    async function loadEmployees() {
+      try {
+        employees = await api('/api/employees');
+        currentPage = 1;
+        renderPage();
+      } catch (err) {
+        usersTbody.innerHTML = '<tr><td colspan="4" class="muted">Failed to load users.</td></tr>';
+        console.error(err);
+      }
+    }
+
+    function renderPage() {
+      perPage = parseInt(perPageSelect.value, 10) || 10;
+      const total = employees.length;
+      const totalPages = Math.max(1, Math.ceil(total / perPage));
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      const startIdx = (currentPage - 1) * perPage;
+      const endIdx = Math.min(total, startIdx + perPage);
+
+      usersTbody.innerHTML = '';
+
+      if (total === 0) {
+        usersTbody.innerHTML = '<tr><td colspan="4" class="muted">No users yet.</td></tr>';
+      } else {
+        const slice = employees.slice(startIdx, endIdx);
+        slice.forEach(e => {
+          const tr = document.createElement('tr');
+
+          const tdId = document.createElement('td'); tdId.textContent = e.employee_id || ''; tdId.setAttribute('data-label','Employee ID');
+          const tdName = document.createElement('td'); tdName.textContent = e.name || ''; tdName.setAttribute('data-label','Name');
+          const tdEmail = document.createElement('td'); tdEmail.textContent = e.email || ''; tdEmail.setAttribute('data-label','Email');
+
+          const tdActions = document.createElement('td'); tdActions.style.textAlign = 'right';
+          // Edit button (styled like homepage)
+          const editBtn = document.createElement('button');
+          editBtn.className = 'action-edit';
+          editBtn.textContent = 'Edit';
+          editBtn.addEventListener('click', () => { window.location.href = `/user.html?id=${e.id}`; });
+
+          // Delete button
+          const delBtn = document.createElement('button');
+          delBtn.className = 'action-delete';
+          delBtn.textContent = 'Delete';
+          delBtn.style.marginLeft = '10px';
+          delBtn.addEventListener('click', async () => {
+            if (!confirm('Delete this employee? This will unassign assets assigned to them.')) return;
+            try {
+              await api(`/api/employees/${e.id}`, { method: 'DELETE' });
+              // Refresh data (keep page if possible)
+              await loadEmployees();
+            } catch (err) {
+              alert('Delete failed: ' + (err.message || err));
+            }
+          });
+
+          tdActions.appendChild(editBtn);
+          tdActions.appendChild(delBtn);
+
+          tr.appendChild(tdId);
+          tr.appendChild(tdName);
+          tr.appendChild(tdEmail);
+          tr.appendChild(tdActions);
+
+          usersTbody.appendChild(tr);
+        });
+      }
+
+      // Update pager text and buttons
+      pagerInfo.textContent = total === 0 ? 'Showing 0–0 of 0' : `Showing ${startIdx + 1}–${endIdx} of ${total}`;
+      pageIndicator.textContent = `Page ${currentPage} / ${totalPages}`;
+
+      prevBtn.disabled = currentPage <= 1;
+      nextBtn.disabled = currentPage >= totalPages;
+
+      // adjust styling for disabled
+      prevBtn.toggleAttribute('disabled', prevBtn.disabled);
+      nextBtn.toggleAttribute('disabled', nextBtn.disabled);
+    }
+
+    // Controls
+    prevBtn.addEventListener('click', () => {
+      if (currentPage <= 1) return;
+      currentPage--;
+      renderPage();
+    });
+    nextBtn.addEventListener('click', () => {
+      const total = employees.length;
+      const totalPages = Math.max(1, Math.ceil(total / perPage));
+      if (currentPage >= totalPages) return;
+      currentPage++;
+      renderPage();
+    });
+    perPageSelect.addEventListener('change', () => {
+      currentPage = 1;
+      renderPage();
+    });
+
+    // Back button
+    document.getElementById('backBtn').addEventListener('click', () => { window.location.href = '/'; });
+
+    // Initial load
+    loadEmployees();
+  </script>
 </body>
 </html>

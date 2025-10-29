@@ -7,13 +7,21 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css" />
   <style>
-    .page { max-width:1000px; margin:28px auto; padding:0 16px; }
-    .card { background:#fff; border-radius:10px; padding:18px; box-shadow:0 6px 18px rgba(0,0,0,0.06); margin-bottom:16px; }
-    table { width:100%; border-collapse:collapse; margin-top:12px; }
-    th, td { padding:10px 12px; border-bottom:1px solid #f0f0f0; text-align:left; }
-    .muted { color:#666; font-size:0.95rem; }
+    .page { max-width:1100px; margin:28px auto; padding:0 16px; }
+    .header-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:12px; }
+    h2 { margin:0; font-size:26px; }
 
-    /* Buttons - match homepage look */
+    /* Card wrapper */
+    .card { background:#fff; border-radius:12px; padding:18px; box-shadow:0 10px 30px rgba(20,30,60,0.06); }
+
+    /* Table styling */
+    table { width:100%; border-collapse:collapse; margin-top:12px; }
+    th, td { text-align:left; padding:14px 12px; border-bottom:1px solid #f1f5f9; }
+    th { color:#6b7280; font-weight:600; font-size:14px; }
+    td { color:#111827; font-size:15px; }
+    tr:last-child td { border-bottom:none; }
+
+    /* Buttons (match homepage) */
     .btn-submit {
       padding:10px 16px;
       border-radius:10px;
@@ -42,6 +50,7 @@
       font-weight:700;
       box-shadow:0 8px 20px rgba(255,43,75,0.22);
       cursor:pointer;
+      border:none;
     }
     .btn-back {
       padding:8px 12px;
@@ -53,14 +62,27 @@
       font-weight:500;
       box-shadow:0 2px 6px rgba(0,0,0,0.05);
     }
+
+    /* Controls row */
     .control-row { display:flex; gap:12px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
 
-    .pagination { display:flex; gap:6px; align-items:center; justify-content:flex-end; margin-top:14px; flex-wrap:wrap; }
-    .pager-btn { padding:8px 10px; border-radius:8px; border:1px solid #e6e9ee; background:#fff; cursor:pointer; }
-    .pager-btn.active { background:linear-gradient(#3aa0ff,#2078f0); color:#fff; border:0; box-shadow:0 6px 18px rgba(32,120,240,0.18); }
-    .pager-info { margin-right:auto; color:#666; font-size:0.95rem; }
+    /* Pagination - matches users.html */
+    .pagination-row { display:flex; justify-content:space-between; align-items:center; margin-top:18px; gap:12px; flex-wrap:wrap; }
+    .pagination-left { display:flex; align-items:center; gap:12px; }
+    .pagination-right { display:flex; align-items:center; gap:12px; }
 
-    /* modal styles (same as other pages) */
+    .rows-per-page { display:inline-flex; align-items:center; gap:8px; color:#6b7280; font-size:14px; }
+    .rows-per-page select { padding:6px; border-radius:8px; border:1px solid #e6eef7; background:#fff; }
+
+    .pager-info { color:#6b7280; font-size:14px; }
+
+    .pager-btn { padding:8px 12px; border-radius:8px; background:#fff; border:1px solid #eef2f6; cursor:pointer; box-shadow:0 3px 10px rgba(10,20,40,0.02); font-weight:600; }
+    .pager-btn.primary { background: linear-gradient(#3aa0ff,#2078f0); color:#fff; border:0; box-shadow:0 8px 22px rgba(32,120,240,0.14); }
+    .pager-btn[disabled] { opacity:.45; cursor:not-allowed; box-shadow:none; }
+
+    .muted { color:#666; font-size:0.95rem; }
+
+    /* Modal (same style as before) */
     ._modal-overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); z-index:1200; }
     ._modal { width:520px; max-width:95%; background:#fff; border-radius:10px; padding:18px; box-shadow:0 12px 40px rgba(0,0,0,0.35); }
     ._modal h3 { margin:0 0 12px; }
@@ -73,13 +95,13 @@
       th, td { padding:8px; }
       ._modal { padding:12px; }
       ._modal .row { flex-direction:column; }
-      .pagination { justify-content:center; }
+      .pagination-row { flex-direction:column; align-items:flex-start; }
     }
   </style>
 </head>
 <body>
   <div class="page">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div class="header-row">
       <h2>Manage Assets</h2>
       <button id="backBtn" class="btn-back">Back</button>
     </div>
@@ -89,15 +111,6 @@
         <input id="search_q" placeholder="Search asset number, serial, category or employee" style="flex:1; padding:10px;border-radius:8px;border:1px solid #ddd" />
         <button id="searchBtn" class="btn-submit">Search</button>
         <button id="resetBtn" class="btn-edit">Reset</button>
-
-        <div style="margin-left:8px;"></div>
-
-        <label for="pageSize" style="margin-left:auto; color:#666;">Show</label>
-        <select id="pageSize" style="padding:8px;border-radius:8px;border:1px solid #e6e9ee;margin-left:8px;">
-          <option value="5">5</option>
-          <option value="10" selected>10</option>
-          <option value="20">20</option>
-        </select>
       </div>
 
       <table id="assetsTable" aria-live="polite">
@@ -113,9 +126,27 @@
         <tbody></tbody>
       </table>
 
-      <div class="pagination" id="paginationRow">
-        <div class="pager-info" id="pagerInfo">Showing 0–0 of 0</div>
-        <!-- pager buttons inserted here -->
+      <!-- Pagination UI -->
+      <div class="pagination-row">
+        <div class="pagination-left">
+          <div class="rows-per-page">
+            <label for="pageSize">Rows per page</label>
+            <select id="pageSize" aria-label="Rows per page">
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+          </div>
+
+          <div class="pager-info" id="pagerInfo">Showing 0–0 of 0</div>
+        </div>
+
+        <div class="pagination-right">
+          <button id="prevBtn" class="pager-btn">Prev</button>
+          <div class="pager-info" id="pageIndicator">Page 1 / 1</div>
+          <button id="nextBtn" class="pager-btn primary">Next</button>
+        </div>
       </div>
 
       <div id="assetsMsg" class="muted" style="margin-top:10px"></div>
