@@ -8,28 +8,84 @@
   <!-- Fonts & stylesheet -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css" />
+  <style>
+    /* small styles for homepage tweaks */
+    .actions-row {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-top:12px;
+      gap:12px;
+    }
+
+    /* left side wrapper keeps Add Employee on left */
+    .actions-left { display:flex; gap:12px; align-items:center; }
+
+    /* right side wrapper places Manage Users button at the right */
+    .actions-right { display:flex; gap:12px; align-items:center; }
+
+    /* small helper so the right-side button aligns visually with Add Asset */
+    .btn-submit {
+      padding:10px 16px;
+      border-radius:10px;
+      border:0;
+      cursor:pointer;
+      background: linear-gradient(#3aa0ff, #2078f0);
+      color:#fff;
+      box-shadow: 0 6px 18px rgba(32,120,240,0.18);
+      font-weight:600;
+    }
+
+    /* make sure the small brand green button style still works if present */
+    .btn-submit.brand { background: linear-gradient(#19c08f,#0c8f6f); box-shadow:0 8px 20px rgba(12,143,111,0.12); color:#fff; }
+
+    /* neutral plain style used for some small buttons */
+    .btn-submit.plain {
+      background: #fff;
+      color: #111;
+      border: 1px solid #e6e9ee;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+
+    /* keep layout responsive */
+    @media (max-width:900px) {
+      .actions-row { flex-direction: column; align-items:stretch; }
+      .actions-right { justify-content:flex-start; }
+    }
+
+    /* footer */
+    footer.site-footer {
+      margin-top:40px;
+      padding:28px 0;
+      background: linear-gradient(180deg, rgba(245,250,255,0.8), rgba(255,255,255,0.6));
+      border-top: 1px solid rgba(230,236,245,0.6);
+    }
+    .site-footer .inner { max-width:1100px; margin:0 auto; padding:0 16px; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; }
+    .site-footer .brand { display:flex; gap:10px; align-items:center; font-weight:700; color:#0b6b59; text-decoration:none; }
+    .site-footer .links { display:flex; gap:16px; align-items:center; color:#4b5563; }
+    .site-footer a { color:inherit; text-decoration:none; }
+    .site-footer .small { color:#6b7280; font-size:0.95rem; }
+
+  </style>
 </head>
 <body>
   <div class="container">
 
     <!-- Header -->
     <header class="header" style="align-items:flex-start;">
-      <!-- clickable brand -> goes to home / -->
       <a href="/" class="brand" style="text-decoration:none; color:inherit;">
         <span class="brand-accent">ITS</span>
         <span>Actionfi — IT Inventory</span>
       </a>
 
-      <!-- pill search -->
       <div class="search-pill" role="search" style="max-width:520px;">
         <span aria-hidden="true">🔍</span>
         <input id="search_q_header" placeholder="Search assets or employees" />
-        <!-- note: this now navigates to search.html -->
         <button id="searchBtnHeader" class="btn-submit" style="margin-left:8px;">Search</button>
       </div>
     </header>
 
-    <!-- Hero (panel matched to forms) -->
+    <!-- Hero -->
     <section class="hero" aria-label="Hero">
       <div class="hero-card">
         <h1>Manage devices, effortlessly.</h1>
@@ -45,7 +101,7 @@
 
     <!-- Panels: Add/Edit Employee | Add Asset -->
     <div class="panels" role="region" aria-label="Forms">
-      <div class="panel" aria-labelledby="emp-heading">
+      <div class="panel" aria-labelledby="emp-heading" style="min-height:240px;">
         <h2 id="emp-heading">Add / Edit Employee</h2>
 
         <div class="field">
@@ -63,12 +119,23 @@
           <input id="emp_email" placeholder="Email" />
         </div>
 
-        <div class="helper-row">
-          <button id="addEmpBtn" class="btn-submit brand" type="button">Add Employee</button>
+        <!-- Actions row: left = Add Employee, right = Manage Users (styled like Add Asset) -->
+        <div class="actions-row">
+          <div class="actions-left">
+            <button id="addEmpBtn" class="btn-submit brand" type="button">Add Employee</button>
+          </div>
+
+          <div class="actions-right">
+            <!-- Match Add Asset styling by using same class btn-submit -->
+            <button id="manageUsersBtn" class="btn-submit" type="button">Manage Users</button>
+          </div>
         </div>
+
+        <!-- NOTE: employees list intentionally removed from home page.
+             Full list is at /users.html -->
       </div>
 
-      <div class="panel" aria-labelledby="asset-heading">
+      <div class="panel" aria-labelledby="asset-heading" style="min-height:240px;">
         <h2 id="asset-heading">Add Asset</h2>
 
         <div class="field">
@@ -103,24 +170,38 @@
           <select id="assign_select"><option value="">-- none --</option></select>
         </div>
 
-        <div class="helper-row">
-          <button id="addAssetBtn" class="btn-submit" type="button">Add Asset</button>
+        <!-- Actions row: left = Add Asset, right = Manage Assets -->
+        <div class="actions-row" style="margin-top:16px;">
+          <div class="actions-left">
+            <button id="addAssetBtn" class="btn-submit" type="button">Add Asset</button>
+          </div>
+
+          <div class="actions-right">
+            <button id="manageAssetsBtn" class="btn-submit" type="button">Manage Assets</button>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Search section -->
-    <section class="search-section" aria-label="Search assets">
-      <h2>Search Assets</h2>
+    <!-- Search section removed from home page (moved to manage assets page) -->
 
-      <div class="search-controls" style="margin-top:8px;">
-        <input id="search_q" placeholder="search by asset number, serial, category or employee" />
-        <button id="searchBtn" class="btn-submit" type="button">Search</button>
-        <button id="resetBtn" class="btn-submit plain" type="button">Reset</button>
+    <!-- Footer -->
+    <footer class="site-footer" role="contentinfo">
+      <div class="inner">
+        <a class="brand" href="/">
+          <span style="font-weight:800;color:#0b6b59">ITS</span>
+          <span style="color:#111827">Actionfi</span>
+        </a>
+
+        <div class="links" aria-hidden="false">
+          <a href="/users.html">Users</a>
+          <a href="/assets.html">Assets</a>
+          <a href="mailto:help@actionfi.com">Support</a>
+        </div>
+
+        <div class="small">© <span id="year"></span> Actionfi — Built with ❤️</div>
       </div>
-
-      <div id="results" class="results" style="margin-top:12px"></div>
-    </section>
+    </footer>
 
   </div>
 
@@ -129,7 +210,7 @@
 
   <!-- Header search now navigates to search.html?q=... and Get Started behavior -->
   <script>
-    // top-bar header search navigates to /search.html?q=...
+    // header search -> search page
     document.getElementById('searchBtnHeader').addEventListener('click', () => {
       const q = document.getElementById('search_q_header').value.trim();
       if (!q) return;
@@ -142,12 +223,18 @@
       e.preventDefault();
       const empInput = document.getElementById('emp_id');
       if (!empInput) return;
-      // Scroll to center of viewport, then focus
       empInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // focus after a tiny delay to avoid fighting the scroll animation on some browsers
       setTimeout(() => {
         try { empInput.focus({ preventScroll: true }); } catch (err) { empInput.focus(); }
       }, 250);
+    });
+
+    // Manage Users / Assets navigation
+    document.getElementById('manageUsersBtn').addEventListener('click', () => {
+      window.location.href = '/users.html';
+    });
+    document.getElementById('manageAssetsBtn').addEventListener('click', () => {
+      window.location.href = '/assets.html';
     });
 
     // Convenience: pressing Enter in Employee ID moves to Full name
@@ -159,14 +246,13 @@
           const nameInput = document.getElementById('emp_name');
           if (nameInput) {
             nameInput.focus();
-            // optionally select text if any
             nameInput.select && nameInput.select();
           }
         }
       });
     }
 
-    // Keep the rest of the small glue for asset category visibility
+    // Asset category visibility
     const cat = document.getElementById('asset_category');
     const otherWrap = document.getElementById('asset_other_wrap');
     if (cat && otherWrap) {
@@ -174,6 +260,11 @@
       updateOtherVisibility();
       cat.addEventListener('change', updateOtherVisibility);
     }
+
+    // footer year
+    try {
+      document.getElementById('year').textContent = new Date().getFullYear();
+    } catch (e) {}
   </script>
 </body>
 </html>

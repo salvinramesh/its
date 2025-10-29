@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Manage Users — ITS Actionfi</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .page { max-width:980px; margin:28px auto; padding:0 16px; }
+    .card { background:#fff; border-radius:10px; padding:18px; box-shadow:0 6px 18px rgba(0,0,0,0.06); margin-bottom:16px; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; }
+    th, td { padding:8px 10px; border-bottom:1px solid #f0f0f0; text-align:left; }
+    .muted { color:#666; font-size:0.9rem; }
+
+    /* Buttons (matching homepage) */
+    .btn { font-weight:600; border:none; cursor:pointer; transition:all 0.15s ease; border-radius:10px; }
+
+    .btn-edit {
+      background:#fff;
+      border:1px solid #e6e9ee;
+      color:#111827;
+      box-shadow:0 2px 6px rgba(0,0,0,0.05);
+      padding:8px 14px;
+      border-radius:8px;
+      font-weight:600;
+      cursor:pointer;
+    }
+    .btn-edit:hover { background:#f9fafb; }
+
+    .btn-delete {
+      background:linear-gradient(90deg, #ff6b7a, #ff2b5b);
+      color:#fff;
+      box-shadow:0 8px 20px rgba(255,43,75,0.22);
+      padding:8px 14px;
+      border-radius:10px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .btn-delete:hover { opacity:0.95; }
+
+    .btn-back {
+      padding:8px 12px;
+      background:#f3f4f6;
+      border-radius:10px;
+      border:none;
+      color:#111827;
+      cursor:pointer;
+      font-weight:500;
+      box-shadow:0 2px 6px rgba(0,0,0,0.05);
+    }
+    .btn-back:hover { background:#e5e7eb; }
+
+    /* Pagination controls */
+    .pager {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-top:12px;
+      flex-wrap:wrap;
+    }
+    .pager .left { display:flex; gap:8px; align-items:center; }
+    .pager .right { display:flex; gap:8px; align-items:center; }
+    .pager .pagebutton { padding:8px 10px; border-radius:8px; border:1px solid #e6e9ee; background:#fff; cursor:pointer; }
+    .pager .pagebutton[disabled] { opacity:0.6; cursor:default; }
+
+    .small-muted { color:#666; font-size:0.9rem; }
+
+    @media (max-width:640px) {
+      .pager { flex-direction:column; align-items:stretch; }
+      .pager .left, .pager .right { width:100%; justify-content:space-between; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h2>Users</h2>
+      <div>
+        <button id="backBtn" class="btn-back">Back</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <table id="usersTable" aria-live="polite">
+        <thead>
+          <tr><th>Employee ID</th><th>Name</th><th>Email</th><th style="text-align:right">Actions</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <div class="pager" style="margin-top:14px">
+        <div class="left">
+          <div>
+            <label for="pageSizeSelect" class="small-muted">Rows per page</label>
+            <select id="pageSizeSelect">
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+          </div>
+          <div style="margin-left:12px" class="small-muted" id="rangeInfo"></div>
+        </div>
+
+        <div class="right">
+          <button id="prevPage" class="pagebutton">Prev</button>
+          <div class="small-muted" id="pageInfo">Page 1 / 1</div>
+          <button id="nextPage" class="pagebutton">Next</button>
+        </div>
+      </div>
+
+      <div id="usersMsg" style="margin-top:8px;color:#666"></div>
+    </div>
+  </div>
+
+  <script src="/users.js"></script>
+</body>
+</html>

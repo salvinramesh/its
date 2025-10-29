@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>User — ITS Actionfi</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    /* page layout */
+    .page { max-width:980px; margin:28px auto; padding:0 16px; }
+    .card { background:#fff; border-radius:10px; padding:18px; box-shadow:0 6px 18px rgba(0,0,0,0.06); margin-bottom:16px; }
+    .row { display:flex; gap:12px; align-items:center; }
+    .col { flex:1; display:flex; flex-direction:column; }
+    label { font-size:0.9rem; margin-bottom:6px; color:#333; }
+    input, select { padding:8px 10px; border-radius:6px; border:1px solid #ddd; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; }
+    th, td { padding:8px 10px; border-bottom:1px solid #f0f0f0; text-align:left; }
+    .muted { color:#666; font-size:0.9rem; }
+
+    /* Button styles (match homepage) */
+    .btn { font-weight:600; border:none; cursor:pointer; transition:all .15s ease; border-radius:10px; }
+
+    /* Primary blue gradient */
+    .btn-submit {
+      padding:10px 16px;
+      border-radius:10px;
+      border:0;
+      cursor:pointer;
+      background: linear-gradient(#3aa0ff, #2078f0);
+      color:#fff;
+      box-shadow: 0 6px 18px rgba(32,120,240,0.18);
+      font-weight:600;
+    }
+    .btn-submit:disabled { opacity:0.6; cursor:default; }
+
+    /* White bordered small */
+    .btn-edit {
+      background:#fff;
+      border:1px solid #e6e9ee;
+      color:#111827;
+      box-shadow:0 2px 8px rgba(2,6,23,0.03);
+      padding:8px 12px;
+      border-radius:8px;
+      font-weight:600;
+      cursor:pointer;
+    }
+    .btn-edit:hover { background:#f9fafb; }
+
+    /* Red destructive */
+    .btn-delete {
+      background:linear-gradient(90deg, #ff6b7a, #ff2b5b);
+      color:#fff;
+      box-shadow:0 8px 20px rgba(255,43,75,0.22);
+      padding:8px 14px;
+      border-radius:10px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .btn-delete:hover { opacity:0.95; }
+
+    /* subtle gray button used for Back / Refresh (optional) */
+    .btn-back {
+      padding:8px 12px;
+      background:#f3f4f6;
+      border-radius:10px;
+      border:none;
+      color:#111827;
+      cursor:pointer;
+      font-weight:500;
+      box-shadow:0 2px 6px rgba(0,0,0,0.05);
+    }
+    .btn-back:hover { background:#e5e7eb; }
+
+    /* responsive tweaks */
+    @media (max-width:760px) {
+      .row { flex-direction:column; }
+      .col { width:100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h2 id="pageTitle">Edit Employee</h2>
+      <div>
+        <button id="backBtn" class="btn-back">Back</button>
+      </div>
+    </div>
+
+    <!-- user edit card -->
+    <div class="card" id="userCard">
+      <h3>Edit Employee</h3>
+      <div style="height:8px"></div>
+      <div class="row">
+        <div class="col">
+          <label>Employee ID</label>
+          <input id="u_employee_id" />
+        </div>
+        <div class="col">
+          <label>Full name</label>
+          <input id="u_name" />
+        </div>
+      </div>
+      <div style="height:12px"></div>
+      <div class="row">
+        <div class="col">
+          <label>Email (optional)</label>
+          <input id="u_email" />
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          <div style="display:flex;gap:8px">
+            <button id="saveUserBtn" class="btn-submit">Save</button>
+            <button id="delUserBtn" class="btn-delete">Delete</button>
+          </div>
+        </div>
+      </div>
+      <div id="userMsg" class="muted" style="margin-top:8px"></div>
+    </div>
+
+    <!-- Assigned assets -->
+    <div class="card">
+      <h3>Assigned Assets</h3>
+      <div class="muted" id="assignedCount">Loading…</div>
+
+      <table id="assignedTable" aria-live="polite">
+        <thead><tr><th>Asset #</th><th>Serial</th><th>Category</th><th style="text-align:right">Action</th></tr></thead>
+        <tbody></tbody>
+      </table>
+
+      <div style="height:12px"></div>
+      <h4>Assign an asset to this user</h4>
+      <div class="row" style="align-items:center;margin-top:8px">
+        <div class="col" style="max-width:420px">
+          <label>Select an unassigned asset</label>
+          <select id="unassignedSelect"><option value="">-- loading --</option></select>
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-end">
+          <button id="assignBtn" class="btn-submit">Assign</button>
+          <button id="refreshUnassigned" class="btn-edit">Refresh</button>
+        </div>
+      </div>
+      <div id="assignMsg" class="muted" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <script src="/user.js"></script>
+</body>
+</html>

@@ -1,45 +1,40 @@
-const sqlite3 = require('sqlite3');
-const { open } = require('sqlite');
-const path = require('path');
+// db.js
+require('dotenv').config();
+const { Pool } = require('pg');
 
-const DB_PATH = path.join(__dirname, 'data.sqlite');
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  // optional tuning:
+  // max: 20,
+  // idleTimeoutMillis: 30000,
+  // connectionTimeoutMillis: 2000
+});
 
-let dbPromise = (async () => {
-  const db = await open({
-    filename: DB_PATH,
-    driver: sqlite3.Database
-  });
-  // Create tables if they don't exist
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS employees (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      employee_id TEXT UNIQUE NOT NULL,
-      name TEXT NOT NULL,
-      email TEXT
-    );
-    CREATE TABLE IF NOT EXISTS assets (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      asset_number TEXT UNIQUE NOT NULL,
-      serial_number TEXT,
-      type TEXT NOT NULL,
-      assigned_to INTEGER,
-      FOREIGN KEY (assigned_to) REFERENCES employees(id) ON DELETE SET NULL
-    );
-  `);
-  return db;
-})();
+async function query(text, params = []) {
+  const client = await pool.connect();
+  try {
+    const res = await client.query(text, params);
+    return res;
+  } finally {
+    client.release();
+  }
+}
 
 module.exports = {
-  getAsync: async (sql, params=[]) => {
-    const db = await dbPromise;
-    return db.get(sql, params);
+  query,
+  // returns single row or null
+  get: async (sql, params = []) => {
+    const res = await query(sql, params);
+    return res.rows[0] || null;
   },
-  allAsync: async (sql, params=[]) => {
-    const db = await dbPromise;
-    return db.all(sql, params);
+  // returns rows array
+  all: async (sql, params = []) => {
+    const res = await query(sql, params);
+    return res.rows;
   },
-  runAsync: async (sql, params=[]) => {
-    const db = await dbPromise;
-    return db.run(sql, params);
-  }
+  // run a statement and return the full result
+  run: async (sql, params = []) => {
+    return query(sql, params);
+  },
+  pool, // expose pool if you need transactions or graceful shutdown
 };

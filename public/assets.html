@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Manage Assets — ITS Actionfi</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .page { max-width:1000px; margin:28px auto; padding:0 16px; }
+    .card { background:#fff; border-radius:10px; padding:18px; box-shadow:0 6px 18px rgba(0,0,0,0.06); margin-bottom:16px; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; }
+    th, td { padding:10px 12px; border-bottom:1px solid #f0f0f0; text-align:left; }
+    .muted { color:#666; font-size:0.95rem; }
+
+    /* Buttons - match homepage look */
+    .btn-submit {
+      padding:10px 16px;
+      border-radius:10px;
+      border:0;
+      cursor:pointer;
+      background: linear-gradient(#3aa0ff, #2078f0);
+      color:#fff;
+      box-shadow: 0 6px 18px rgba(32,120,240,0.18);
+      font-weight:600;
+    }
+    .btn-edit {
+      background:#fff;
+      border:1px solid #e6e9ee;
+      color:#111827;
+      box-shadow:0 2px 6px rgba(0,0,0,0.05);
+      padding:8px 14px;
+      border-radius:8px;
+      font-weight:600;
+      cursor:pointer;
+    }
+    .btn-delete {
+      background:linear-gradient(90deg,#ff6b7a,#ff2b5b);
+      color:#fff;
+      padding:8px 14px;
+      border-radius:10px;
+      font-weight:700;
+      box-shadow:0 8px 20px rgba(255,43,75,0.22);
+      cursor:pointer;
+    }
+    .btn-back {
+      padding:8px 12px;
+      background:#f3f4f6;
+      border-radius:10px;
+      border:none;
+      color:#111827;
+      cursor:pointer;
+      font-weight:500;
+      box-shadow:0 2px 6px rgba(0,0,0,0.05);
+    }
+    .control-row { display:flex; gap:12px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
+
+    .pagination { display:flex; gap:6px; align-items:center; justify-content:flex-end; margin-top:14px; flex-wrap:wrap; }
+    .pager-btn { padding:8px 10px; border-radius:8px; border:1px solid #e6e9ee; background:#fff; cursor:pointer; }
+    .pager-btn.active { background:linear-gradient(#3aa0ff,#2078f0); color:#fff; border:0; box-shadow:0 6px 18px rgba(32,120,240,0.18); }
+    .pager-info { margin-right:auto; color:#666; font-size:0.95rem; }
+
+    /* modal styles (same as other pages) */
+    ._modal-overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); z-index:1200; }
+    ._modal { width:520px; max-width:95%; background:#fff; border-radius:10px; padding:18px; box-shadow:0 12px 40px rgba(0,0,0,0.35); }
+    ._modal h3 { margin:0 0 12px; }
+    ._modal .row { display:flex; gap:12px; }
+    ._modal .col { flex:1; display:flex; flex-direction:column; }
+    ._modal label { font-size:0.9rem; margin-bottom:6px; color:#333; }
+    ._modal input, ._modal select { padding:8px 10px; border-radius:6px; border:1px solid #ddd; }
+
+    @media (max-width:640px) {
+      th, td { padding:8px; }
+      ._modal { padding:12px; }
+      ._modal .row { flex-direction:column; }
+      .pagination { justify-content:center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h2>Manage Assets</h2>
+      <button id="backBtn" class="btn-back">Back</button>
+    </div>
+
+    <div class="card">
+      <div class="control-row">
+        <input id="search_q" placeholder="Search asset number, serial, category or employee" style="flex:1; padding:10px;border-radius:8px;border:1px solid #ddd" />
+        <button id="searchBtn" class="btn-submit">Search</button>
+        <button id="resetBtn" class="btn-edit">Reset</button>
+
+        <div style="margin-left:8px;"></div>
+
+        <label for="pageSize" style="margin-left:auto; color:#666;">Show</label>
+        <select id="pageSize" style="padding:8px;border-radius:8px;border:1px solid #e6e9ee;margin-left:8px;">
+          <option value="5">5</option>
+          <option value="10" selected>10</option>
+          <option value="20">20</option>
+        </select>
+      </div>
+
+      <table id="assetsTable" aria-live="polite">
+        <thead>
+          <tr>
+            <th>Asset #</th>
+            <th>Serial</th>
+            <th>Category</th>
+            <th>Assigned To</th>
+            <th style="text-align:right">Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <div class="pagination" id="paginationRow">
+        <div class="pager-info" id="pagerInfo">Showing 0–0 of 0</div>
+        <!-- pager buttons inserted here -->
+      </div>
+
+      <div id="assetsMsg" class="muted" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <script src="/assets.js"></script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-// public/app.js (updated to include Edit modal)
+// public/app.js
 async function api(path, opts) {
   const res = await fetch(path, opts);
   if(!res.ok) {
@@ -8,6 +8,7 @@ async function api(path, opts) {
   return res.json();
 }
 
+/* ---------- Employees: populate assign_select only ---------- */
 async function refreshEmployees() {
   const sel = document.getElementById('assign_select');
   if (!sel) return;
@@ -21,67 +22,73 @@ async function refreshEmployees() {
   });
 }
 
-document.getElementById('addEmpBtn').addEventListener('click', async () => {
-  try {
-    const employee_id = document.getElementById('emp_id').value.trim();
-    const name = document.getElementById('emp_name').value.trim();
-    const email = document.getElementById('emp_email').value.trim();
-    if(!employee_id || !name) { alert('employee id and name required'); return; }
-    await api('/api/employees', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ employee_id, name, email })});
-    document.getElementById('emp_id').value='';document.getElementById('emp_name').value='';document.getElementById('emp_email').value='';
-    await refreshEmployees();
-    alert('Employee added');
-  } catch(e) { alert('Error: '+e.message); }
-});
-
-document.getElementById('addAssetBtn').addEventListener('click', async () => {
-  try {
-    const asset_number = document.getElementById('asset_number').value.trim();
-    const serial_number = document.getElementById('serial_number').value.trim();
-    const category = document.getElementById('asset_category').value;
-    const asset_other = document.getElementById('asset_other') ? document.getElementById('asset_other').value.trim() : '';
-    const assigned_to = document.getElementById('assign_select').value || null;
-
-    // determine final type value to send
-    let type;
-    if (category === 'Others') {
-      if (!asset_other) { alert('Please specify the other category'); return; }
-      type = asset_other;
-    } else {
-      type = category;
+/* ---------- Add Employee ---------- */
+const addEmpBtn = document.getElementById('addEmpBtn');
+if (addEmpBtn) {
+  addEmpBtn.addEventListener('click', async () => {
+    try {
+      const employee_id = document.getElementById('emp_id').value.trim();
+      const name = document.getElementById('emp_name').value.trim();
+      const email = document.getElementById('emp_email').value.trim();
+      if(!employee_id || !name) { alert('employee id and name required'); return; }
+      await api('/api/employees', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ employee_id, name, email })});
+      document.getElementById('emp_id').value='';document.getElementById('emp_name').value='';document.getElementById('emp_email').value='';
+      await refreshEmployees();
+      alert('Employee added');
+    } catch(e) {
+      alert('Error: '+ (e.message || e));
+      console.error(e);
     }
+  });
+}
 
-    if(!asset_number || !type) { alert('asset number and category required'); return; }
+/* ---------- Asset handlers ---------- */
+const addAssetBtn = document.getElementById('addAssetBtn');
+if (addAssetBtn) {
+  addAssetBtn.addEventListener('click', async () => {
+    try {
+      const asset_number = document.getElementById('asset_number').value.trim();
+      const serial_number = document.getElementById('serial_number').value.trim();
+      const category = document.getElementById('asset_category').value;
+      const asset_other = document.getElementById('asset_other') ? document.getElementById('asset_other').value.trim() : '';
+      const assigned_to = document.getElementById('assign_select').value || null;
 
-    await api('/api/assets', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ asset_number, serial_number, type, assigned_to })});
+      let type;
+      if (category === 'Others') {
+        if (!asset_other) { alert('Please specify the other category'); return; }
+        type = asset_other;
+      } else {
+        type = category;
+      }
 
-    // clear form
-    document.getElementById('asset_number').value='';
-    document.getElementById('serial_number').value='';
-    document.getElementById('asset_category').value='Laptop';
-    if (document.getElementById('asset_other')) document.getElementById('asset_other').value='';
-    document.getElementById('assign_select').value='';
+      if(!asset_number || !type) { alert('asset number and category required'); return; }
 
-    // hide other input after reset (if shown)
-    const otherWrap = document.getElementById('asset_other_wrap');
-    if (otherWrap) otherWrap.style.display = 'none';
+      await api('/api/assets', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ asset_number, serial_number, type, assigned_to })});
 
-    alert('Asset added');
-    loadAll();
-  } catch(e) { alert('Error: '+e.message); }
-});
+      document.getElementById('asset_number').value='';
+      document.getElementById('serial_number').value='';
+      document.getElementById('asset_category').value='Laptop';
+      if (document.getElementById('asset_other')) document.getElementById('asset_other').value='';
+      document.getElementById('assign_select').value='';
 
-/* ---------- Edit modal helpers ---------- */
+      const otherWrap = document.getElementById('asset_other_wrap');
+      if (otherWrap) otherWrap.style.display = 'none';
+
+      alert('Asset added');
+      loadAll();
+    } catch(e) { alert('Error: '+e.message); }
+  });
+}
+
+/* ---------- Asset Edit modal & Table rendering ---------- */
 
 async function openEditModal(asset) {
-  // ensure we have current employees list for assignment
   const emps = await api('/api/employees');
 
-  // create overlay
-  let overlay = document.querySelector('._modal-overlay');
-  if (overlay) overlay.remove(); // remove existing (safety)
+  let overlay = document.querySelector('._modal-overlay-asset');
+  if (overlay) overlay.remove();
   overlay = document.createElement('div');
-  overlay.className = '_modal-overlay';
+  overlay.className = '_modal-overlay-asset';
 
   const modal = document.createElement('div');
   modal.className = '_modal';
@@ -128,8 +135,8 @@ async function openEditModal(asset) {
       </div>
       <div class="col" style="display:flex;align-items:flex-end;justify-content:flex-end">
         <div class="actions" style="display:flex;gap:8px">
-          <button id="editCancel" class="btn-submit plain">Cancel</button>
-          <button id="editSave" class="btn-submit">Save</button>
+          <button id="editCancel" class="btn-small">Cancel</button>
+          <button id="editSave" class="btn-small primary">Save</button>
         </div>
       </div>
     </div>
@@ -138,7 +145,6 @@ async function openEditModal(asset) {
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
 
-  // populate employees dropdown
   const editAssigned = modal.querySelector('#edit_assigned');
   emps.forEach(e => {
     const opt = document.createElement('option');
@@ -147,10 +153,8 @@ async function openEditModal(asset) {
     editAssigned.appendChild(opt);
   });
 
-  // set current values
   const editCategory = modal.querySelector('#edit_category');
   const currentType = (asset.type || '').trim();
-  // set select by matching ignoring case; fallback to 'Others' and fill edit_other
   let matched = false;
   Array.from(editCategory.options).forEach(o => {
     if (o.value.trim().toLowerCase() === currentType.toLowerCase()) {
@@ -169,25 +173,16 @@ async function openEditModal(asset) {
     editOther.value = '';
   }
 
-  // set assigned id (asset.assigned_to exists as a numeric id)
-  if (asset.assigned_to) {
-    editAssigned.value = asset.assigned_to;
-  } else {
-    editAssigned.value = '';
-  }
+  if (asset.assigned_to) editAssigned.value = asset.assigned_to;
+  else editAssigned.value = '';
 
-  // event: show/hide other input
   editCategory.addEventListener('change', () => {
     if (editCategory.value === 'Others') editOtherCol.style.display = 'block';
     else { editOtherCol.style.display = 'none'; editOther.value = ''; }
   });
 
-  // Cancel button
-  modal.querySelector('#editCancel').addEventListener('click', () => {
-    overlay.remove();
-  });
+  modal.querySelector('#editCancel').addEventListener('click', () => overlay.remove());
 
-  // Save button
   modal.querySelector('#editSave').addEventListener('click', async () => {
     const newAssetNumber = modal.querySelector('#edit_asset_number').value.trim();
     const newSerial = modal.querySelector('#edit_serial').value.trim();
@@ -222,13 +217,12 @@ async function openEditModal(asset) {
   });
 }
 
-// escape helper to avoid injecting quotes
 function escapeHtml(s) {
-  if (!s) return '';
+  if (s === null || s === undefined) return '';
   return String(s).replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
-/* ---------- Table rendering with Edit/Delete buttons ---------- */
+/* ---------- Table rendering with Edit/Delete buttons (assets) ---------- */
 
 async function renderTable(rows) {
   const div = document.getElementById('results');
@@ -260,16 +254,12 @@ async function renderTable(rows) {
     tdActions.style.alignItems = 'center';
     tdActions.style.justifyContent = 'flex-end';
 
-    // Edit button
     const editBtn = document.createElement('button');
     editBtn.type = 'button';
     editBtn.className = 'btn-edit';
     editBtn.textContent = 'Edit';
-    editBtn.addEventListener('click', () => {
-      openEditModal(r);
-    });
+    editBtn.addEventListener('click', () => openEditModal(r));
 
-    // Delete button
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
     delBtn.className = 'btn-delete small';
@@ -292,7 +282,6 @@ async function renderTable(rows) {
   div.innerHTML = '';
   div.appendChild(table);
 
-  // delete handlers
   div.querySelectorAll('.btn-delete').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       if(!confirm('Delete asset?')) return;
@@ -314,20 +303,25 @@ async function loadAll() {
 
 /* ---------- Search & other handlers ---------- */
 
-document.getElementById('searchBtn').addEventListener('click', async () => {
-  const q = document.getElementById('search_q').value.trim();
-  if(!q) { loadAll(); return; }
-  const rows = await api('/api/search?q='+encodeURIComponent(q));
-  renderTable(rows);
-});
+const searchBtn = document.getElementById('searchBtn');
+if (searchBtn) {
+  searchBtn.addEventListener('click', async () => {
+    const q = document.getElementById('search_q').value.trim();
+    if(!q) { loadAll(); return; }
+    const rows = await api('/api/search?q='+encodeURIComponent(q));
+    renderTable(rows);
+  });
+}
 
-document.getElementById('resetBtn').addEventListener('click', async () => {
-  document.getElementById('search_q').value='';
-  loadAll();
-});
+const resetBtn = document.getElementById('resetBtn');
+if (resetBtn) {
+  resetBtn.addEventListener('click', async () => {
+    document.getElementById('search_q').value='';
+    loadAll();
+  });
+}
 
 window.addEventListener('load', async () => {
-  // ensure asset_other visibility matches current select on load
   const cat = document.getElementById('asset_category');
   const otherWrap = document.getElementById('asset_other_wrap');
   if (cat && otherWrap) {
