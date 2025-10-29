@@ -1,4 +1,4 @@
-// public/search.js (updated)
+// public/search.js (fixed - click row shows read-only asset+user details modal)
 function qs(param) {
   const u = new URL(window.location.href);
   return u.searchParams.get(param) || '';
@@ -6,15 +6,19 @@ function qs(param) {
 
 async function api(path, opts) {
   const res = await fetch(path, opts);
-  if(!res.ok) {
-    const txt = await res.text();
-    throw new Error(txt || 'API error');
-  }
-  return res.json();
+  const txt = await res.text();
+  if (!res.ok) throw new Error(txt || res.statusText);
+  try { return JSON.parse(txt); } catch { return txt; }
 }
 
-/* Reuse modal open logic for search page */
+function escapeHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* ---------- Edit modal (existing) ---------- */
 async function openEditModalFromSearch(asset) {
+  // this is the edit modal you previously used; unchanged
   // fetch employees
   const emps = await api('/api/employees');
 
@@ -151,55 +155,112 @@ async function openEditModalFromSearch(asset) {
   });
 }
 
-function escapeHtml(s) {
-  if (!s) return '';
-  return String(s).replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+/* ---------- Read-only details modal ---------- */
+async function openDetailsModal(asset) {
+  // Fetch assigned employee details if any
+  let employee = null;
+  if (asset.assigned_to) {
+    try {
+      employee = await api(`/api/employees/${asset.assigned_to}`);
+    } catch (e) {
+      employee = null;
+    }
+  }
+
+  // build modal
+  const overlay = document.createElement('div');
+  overlay.className = '_modal-overlay';
+
+  const modal = document.createElement('div');
+  modal.className = '_modal';
+
+  modal.innerHTML = `
+    <h3>Asset Details</h3>
+
+    <div class="detail-item"><span class="detail-label">Asset Number</span><span class="detail-value">${escapeHtml(asset.asset_number)}</span></div>
+    <div class="detail-item"><span class="detail-label">Category</span><span class="detail-value">${escapeHtml(asset.type || '—')}</span></div>
+    <div class="detail-item"><span class="detail-label">Serial Number</span><span class="detail-value">${escapeHtml(asset.serial_number || '—')}</span></div>
+
+    ${employee ? `
+      <hr style="margin:14px 0;border:0;border-top:1px solid #eee;">
+      <h3>Assigned User</h3>
+      <div class="detail-item"><span class="detail-label">Employee ID</span><span class="detail-value">${escapeHtml(employee.employee_id || '—')}</span></div>
+      <div class="detail-item"><span class="detail-label">Name</span><span class="detail-value">${escapeHtml(employee.name || '—')}</span></div>
+      <div class="detail-item"><span class="detail-label">Email</span><span class="detail-value">${escapeHtml(employee.email || '—')}</span></div>
+    ` : `<div class="detail-item" style="margin-top:8px;color:#666">Not assigned to any employee.</div>`}
+
+    <div style="text-align:right;margin-top:16px;">
+      <button id="closeModalBtn" class="btn-submit plain">Close</button>
+    </div>
+  `;
+
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  modal.querySelector('#closeModalBtn').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (ev) => { if (ev.target === overlay) overlay.remove(); });
 }
 
+/* ---------- Render table ---------- */
 function renderTable(rows) {
   const div = document.getElementById('results');
+  const msg = document.getElementById('msg');
+  msg.textContent = '';
   if (!rows || rows.length === 0) {
     div.innerHTML = '<p class="small">No results found</p>';
     return;
   }
 
   const table = document.createElement('table');
-  table.innerHTML = '<thead><tr><th>Asset #</th><th>Serial</th><th>Category</th><th>Assigned To</th><th>Actions</th></tr></thead>';
+  table.innerHTML = '<thead><tr><th>Asset #</th><th>Serial</th><th>Category</th><th>Assigned To</th><th style="text-align:right">Actions</th></tr></thead>';
   const tbody = document.createElement('tbody');
 
   rows.forEach(r => {
     const tr = document.createElement('tr');
+    tr.className = 'asset-row';
 
-    const tdAsset = document.createElement('td'); tdAsset.textContent = r.asset_number;
-    const tdSerial = document.createElement('td'); tdSerial.textContent = r.serial_number || '';
-    const tdType = document.createElement('td'); tdType.textContent = r.type || '';
-    const tdAssigned = document.createElement('td'); tdAssigned.textContent = r.assigned_name ? `${r.assigned_name} (${r.assigned_employee_id})` : '';
+    // clicking row opens details (but we will ignore clicks on buttons)
+    tr.addEventListener('click', (ev) => {
+      if (ev.target.closest('button')) return; // ignore when clicking action buttons
+      openDetailsModal(r);
+    });
+
+    const tdAsset = document.createElement('td'); tdAsset.textContent = r.asset_number; tr.appendChild(tdAsset);
+    const tdSerial = document.createElement('td'); tdSerial.textContent = r.serial_number || ''; tr.appendChild(tdSerial);
+    const tdType = document.createElement('td'); tdType.textContent = r.type || ''; tr.appendChild(tdType);
+    const tdAssigned = document.createElement('td'); tdAssigned.textContent = r.assigned_name ? `${r.assigned_name} (${r.assigned_employee_id})` : ''; tr.appendChild(tdAssigned);
 
     const tdActions = document.createElement('td');
+    tdActions.style.textAlign = 'right';
     tdActions.style.whiteSpace = 'nowrap';
     tdActions.style.display = 'flex';
     tdActions.style.gap = '8px';
     tdActions.style.justifyContent = 'flex-end';
 
     const editBtn = document.createElement('button');
-    editBtn.type = 'button';
     editBtn.className = 'btn-edit';
     editBtn.textContent = 'Edit';
-    editBtn.addEventListener('click', () => openEditModalFromSearch(r));
+    editBtn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      openEditModalFromSearch(r);
+    });
 
     const delBtn = document.createElement('button');
-    delBtn.type = 'button';
-    delBtn.className = 'btn-delete small';
-    delBtn.setAttribute('data-id', r.id);
+    delBtn.className = 'btn-delete';
     delBtn.textContent = 'Delete';
+    delBtn.addEventListener('click', async (ev) => {
+      ev.stopPropagation();
+      if (!confirm('Delete asset?')) return;
+      try {
+        await api('/api/assets/' + r.id, { method: 'DELETE' });
+        runSearch();
+      } catch (err) {
+        alert('Delete failed: ' + err.message);
+      }
+    });
 
     tdActions.appendChild(editBtn);
     tdActions.appendChild(delBtn);
-
-    tr.appendChild(tdAsset);
-    tr.appendChild(tdSerial);
-    tr.appendChild(tdType);
-    tr.appendChild(tdAssigned);
     tr.appendChild(tdActions);
 
     tbody.appendChild(tr);
@@ -208,50 +269,34 @@ function renderTable(rows) {
   table.appendChild(tbody);
   div.innerHTML = '';
   div.appendChild(table);
-
-  // wire delete buttons
-  div.querySelectorAll('.btn-delete').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (!confirm('Delete asset?')) return;
-      const id = btn.getAttribute('data-id');
-      try {
-        await api('/api/assets/' + id, { method: 'DELETE' });
-        runSearch();
-      } catch (err) {
-        alert('Delete failed: ' + err.message);
-      }
-    });
-  });
 }
 
+/* ---------- Run search ---------- */
 async function runSearch() {
   const q = qs('q').trim();
   const info = document.getElementById('searchInfo');
-  if (!q) {
-    info.textContent = 'No search query provided.';
-    document.getElementById('results').innerHTML = '';
-    return;
-  }
-  info.textContent = `Results for: "${q}"`;
+  const msg = document.getElementById('msg');
+  info.textContent = q ? `Results for: "${q}"` : 'Showing all assets';
+  msg.textContent = 'Loading…';
   try {
-    const rows = await api('/api/search?q=' + encodeURIComponent(q));
+    const rows = q ? await api('/api/search?q=' + encodeURIComponent(q)) : await api('/api/assets');
     renderTable(rows);
+    msg.textContent = rows && rows.length ? '' : 'No results';
   } catch (err) {
-    document.getElementById('results').innerHTML = '<p class="small">Search failed: ' + err.message + '</p>';
+    msg.textContent = 'Search failed: ' + (err.message || err);
   }
 }
 
-// page controls
-document.getElementById('backBtn').addEventListener('click', () => { window.history.back(); });
+/* ---------- page controls ---------- */
+document.getElementById('backBtn').addEventListener('click', () => window.history.back());
+
 document.getElementById('goSearchBtn').addEventListener('click', () => {
   const q = document.getElementById('search_q_top').value.trim();
-  if (!q) return;
-  const newUrl = window.location.pathname + '?q=' + encodeURIComponent(q);
+  const newUrl = window.location.pathname + (q ? `?q=${encodeURIComponent(q)}` : '');
   window.location.href = newUrl;
 });
-document.getElementById('search_q_top').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') document.getElementById('goSearchBtn').click();
-});
+document.getElementById('search_q_top').addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('goSearchBtn').click(); });
+
 document.addEventListener('DOMContentLoaded', () => {
   const q = qs('q');
   document.getElementById('search_q_top').value = q;

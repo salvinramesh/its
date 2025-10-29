@@ -6,11 +6,44 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css" />
+  <style>
+    /* small page-specific styles */
+    .container { max-width:1100px; margin:28px auto; padding:0 16px; }
+    .header { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+    .search-pill { display:flex; align-items:center; gap:8px; }
+    h1 { margin:0 0 8px 0; }
+    .small { font-size:0.95rem; color:var(--muted); margin:6px 0 12px 0; }
+
+    /* results table */
+    .results table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 10px 30px rgba(10,20,40,0.04); }
+    .results th, .results td { padding:14px 16px; border-bottom:1px solid #f4f6f8; text-align:left; }
+    .results thead th { background:transparent; color:#374151; font-weight:700; }
+    .results tbody tr.asset-row:hover { background:#fbfdff; cursor:pointer; }
+
+    /* action buttons matching homepage */
+    .btn-submit { padding:10px 16px; border-radius:10px; border:0; cursor:pointer; background: linear-gradient(#3aa0ff, #2078f0); color:#fff; box-shadow: 0 6px 18px rgba(32,120,240,0.18); font-weight:600; }
+    .btn-submit.plain { background:#fff; color:#111; border:1px solid #eee; box-shadow:none; }
+    .btn-edit { background:#fff; border:1px solid #e6e9ee; color:#111827; box-shadow:0 2px 6px rgba(0,0,0,0.04); padding:8px 12px; border-radius:8px; font-weight:600; cursor:pointer; }
+    .btn-delete { background:linear-gradient(90deg,#ff6b7a,#ff2b5b); color:#fff; padding:8px 12px; border-radius:10px; font-weight:700; box-shadow:0 8px 20px rgba(255,43,75,0.22); cursor:pointer; }
+    .btn-back { padding:8px 12px; background:#f3f4f6; border-radius:10px; border:none; color:#111827; cursor:pointer; font-weight:500; box-shadow:0 2px 6px rgba(0,0,0,0.05); }
+
+    /* modal */
+    ._modal-overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); z-index:1200; }
+    ._modal { width:620px; max-width:95%; background:#fff; border-radius:12px; padding:22px; box-shadow:0 12px 40px rgba(0,0,0,0.35); }
+    ._modal h3 { margin-top:0; }
+    .detail-item { margin-bottom:10px; }
+    .detail-label { color:#555; font-weight:600; display:block; }
+    .detail-value { color:#111; margin-left:6px; font-weight:500; display:block; margin-top:4px; }
+
+    @media (max-width:640px) {
+      ._modal { padding:16px; }
+      .results th, .results td { padding:10px; }
+    }
+  </style>
 </head>
 <body>
   <div class="container">
     <header class="header" style="align-items:flex-start;">
-      <!-- clickable brand -> goes to home / -->
       <a href="/" class="brand" style="text-decoration:none; color:inherit;">
         <span class="brand-accent">ITS</span>
         <span>Actionfi — Search</span>
@@ -23,17 +56,18 @@
       </div>
     </header>
 
-    <section style="margin-top:10px">
+    <section style="margin-top:18px">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <h1 style="margin:0">Search results</h1>
         <div>
-          <button id="backBtn" class="btn-submit plain">Back</button>
+          <button id="backBtn" class="btn-back">Back</button>
         </div>
       </div>
 
-      <p class="small" id="searchInfo" style="margin-top:8px;color:var(--muted)"></p>
+      <p class="small" id="searchInfo"></p>
 
       <div id="results" class="results" style="margin-top:12px"></div>
+      <p id="msg" style="color:#6b7280;margin-top:12px;"></p>
     </section>
   </div>
 
