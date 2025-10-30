@@ -1,4 +1,5 @@
 // public/app.js
+// Single-file client for ITS Actionfi — makes Edit a visible link to /user.html?id=...
 async function api(path, opts) {
   const res = await fetch(path, opts);
   if(!res.ok) {
@@ -8,17 +9,95 @@ async function api(path, opts) {
   return res.json();
 }
 
-/* ---------- Employees: populate assign_select only ---------- */
+/* ---------- Employees: populate assign_select and employees list ---------- */
 async function refreshEmployees() {
   const sel = document.getElementById('assign_select');
   if (!sel) return;
   sel.innerHTML = '<option value="">-- none --</option>';
   const emps = await api('/api/employees');
+
+  // populate assign dropdown
   emps.forEach(e => {
     const opt = document.createElement('option');
     opt.value = e.id;
     opt.textContent = `${e.name} (${e.employee_id})`;
     sel.appendChild(opt);
+  });
+
+  // populate employees list in the Add / Edit Employee panel
+  const listWrap = document.getElementById('employees_list');
+  if (!listWrap) return;
+  if (!emps.length) {
+    listWrap.innerHTML = '<p class="small">No employees yet.</p>';
+    return;
+  }
+
+  const table = document.createElement('table');
+  table.innerHTML = '<thead><tr><th>Employee ID</th><th>Name</th><th>Email</th><th style="text-align:right">Actions</th></tr></thead>';
+  const tbody = document.createElement('tbody');
+
+  emps.forEach(e => {
+    const tr = document.createElement('tr');
+
+    const tdId = document.createElement('td');
+    tdId.textContent = e.employee_id;
+    tdId.setAttribute('data-label', 'Employee ID');
+
+    const tdName = document.createElement('td');
+    tdName.textContent = e.name;
+    tdName.setAttribute('data-label', 'Name');
+
+    const tdEmail = document.createElement('td');
+    tdEmail.textContent = e.email || '';
+    tdEmail.setAttribute('data-label', 'Email');
+
+    const tdActions = document.createElement('td');
+    tdActions.style.textAlign = 'right';
+    tdActions.setAttribute('data-label', 'Actions');
+
+    // Create a visible link for Edit that goes to user.html?id=<id>
+    const editLink = document.createElement('a');
+    editLink.href = `/user.html?id=${e.id}`;
+    editLink.className = 'btn-small primary';
+    editLink.style.marginRight = '8px';
+    editLink.style.textDecoration = 'none';
+    editLink.style.display = 'inline-block';
+    editLink.textContent = 'Edit';
+
+    // Delete button (with dataset id, used by handler)
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn-small danger';
+    delBtn.textContent = 'Delete';
+    delBtn.setAttribute('data-id', e.id);
+
+    tdActions.appendChild(editLink);
+    tdActions.appendChild(delBtn);
+
+    tr.appendChild(tdId);
+    tr.appendChild(tdName);
+    tr.appendChild(tdEmail);
+    tr.appendChild(tdActions);
+
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(tbody);
+  listWrap.innerHTML = '';
+  listWrap.appendChild(table);
+
+  // wire delete handlers (added after DOM insertion)
+  listWrap.querySelectorAll('button[data-id]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-id');
+      if (!confirm('Delete this employee? This will unassign assets assigned to them.')) return;
+      try {
+        await api(`/api/employees/${id}`, { method: 'DELETE' });
+        await refreshEmployees();
+        await loadAll(); // refresh assets listing to reflect any changes
+      } catch (err) {
+        alert('Delete failed: ' + (err.message || err));
+      }
+    });
   });
 }
 
@@ -53,6 +132,7 @@ if (addAssetBtn) {
       const asset_other = document.getElementById('asset_other') ? document.getElementById('asset_other').value.trim() : '';
       const assigned_to = document.getElementById('assign_select').value || null;
 
+      // determine final type value to send
       let type;
       if (category === 'Others') {
         if (!asset_other) { alert('Please specify the other category'); return; }
@@ -65,12 +145,14 @@ if (addAssetBtn) {
 
       await api('/api/assets', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ asset_number, serial_number, type, assigned_to })});
 
+      // clear form
       document.getElementById('asset_number').value='';
       document.getElementById('serial_number').value='';
       document.getElementById('asset_category').value='Laptop';
       if (document.getElementById('asset_other')) document.getElementById('asset_other').value='';
       document.getElementById('assign_select').value='';
 
+      // hide other input after reset (if shown)
       const otherWrap = document.getElementById('asset_other_wrap');
       if (otherWrap) otherWrap.style.display = 'none';
 
@@ -80,13 +162,15 @@ if (addAssetBtn) {
   });
 }
 
-/* ---------- Asset Edit modal & Table rendering ---------- */
+/* ---------- Asset Edit modal & table rendering ---------- */
 
 async function openEditModal(asset) {
+  // ensure we have current employees list for assignment
   const emps = await api('/api/employees');
 
+  // create overlay
   let overlay = document.querySelector('._modal-overlay-asset');
-  if (overlay) overlay.remove();
+  if (overlay) overlay.remove(); // remove existing (safety)
   overlay = document.createElement('div');
   overlay.className = '_modal-overlay-asset';
 
@@ -145,6 +229,7 @@ async function openEditModal(asset) {
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
 
+  // populate employees dropdown
   const editAssigned = modal.querySelector('#edit_assigned');
   emps.forEach(e => {
     const opt = document.createElement('option');
@@ -153,8 +238,10 @@ async function openEditModal(asset) {
     editAssigned.appendChild(opt);
   });
 
+  // set current values
   const editCategory = modal.querySelector('#edit_category');
   const currentType = (asset.type || '').trim();
+  // set select by matching ignoring case; fallback to 'Others' and fill edit_other
   let matched = false;
   Array.from(editCategory.options).forEach(o => {
     if (o.value.trim().toLowerCase() === currentType.toLowerCase()) {
@@ -173,16 +260,25 @@ async function openEditModal(asset) {
     editOther.value = '';
   }
 
-  if (asset.assigned_to) editAssigned.value = asset.assigned_to;
-  else editAssigned.value = '';
+  // set assigned id (asset.assigned_to exists as a numeric id)
+  if (asset.assigned_to) {
+    editAssigned.value = asset.assigned_to;
+  } else {
+    editAssigned.value = '';
+  }
 
+  // event: show/hide other input
   editCategory.addEventListener('change', () => {
     if (editCategory.value === 'Others') editOtherCol.style.display = 'block';
     else { editOtherCol.style.display = 'none'; editOther.value = ''; }
   });
 
-  modal.querySelector('#editCancel').addEventListener('click', () => overlay.remove());
+  // Cancel button
+  modal.querySelector('#editCancel').addEventListener('click', () => {
+    overlay.remove();
+  });
 
+  // Save button
   modal.querySelector('#editSave').addEventListener('click', async () => {
     const newAssetNumber = modal.querySelector('#edit_asset_number').value.trim();
     const newSerial = modal.querySelector('#edit_serial').value.trim();
@@ -217,6 +313,7 @@ async function openEditModal(asset) {
   });
 }
 
+// escape helper to avoid injecting quotes
 function escapeHtml(s) {
   if (s === null || s === undefined) return '';
   return String(s).replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -237,15 +334,19 @@ async function renderTable(rows) {
 
     const tdAsset = document.createElement('td');
     tdAsset.textContent = r.asset_number;
+    tdAsset.setAttribute('data-label', 'Asset #');
 
     const tdSerial = document.createElement('td');
     tdSerial.textContent = r.serial_number || '';
+    tdSerial.setAttribute('data-label', 'Serial');
 
     const tdType = document.createElement('td');
     tdType.textContent = r.type || '';
+    tdType.setAttribute('data-label', 'Category');
 
     const tdAssigned = document.createElement('td');
     tdAssigned.textContent = r.assigned_name ? `${r.assigned_name} (${r.assigned_employee_id})` : '';
+    tdAssigned.setAttribute('data-label', 'Assigned To');
 
     const tdActions = document.createElement('td');
     tdActions.style.whiteSpace = 'nowrap';
@@ -253,13 +354,18 @@ async function renderTable(rows) {
     tdActions.style.gap = '8px';
     tdActions.style.alignItems = 'center';
     tdActions.style.justifyContent = 'flex-end';
+    tdActions.setAttribute('data-label', 'Actions');
 
+    // Edit button (asset edit modal)
     const editBtn = document.createElement('button');
     editBtn.type = 'button';
     editBtn.className = 'btn-edit';
     editBtn.textContent = 'Edit';
-    editBtn.addEventListener('click', () => openEditModal(r));
+    editBtn.addEventListener('click', () => {
+      openEditModal(r);
+    });
 
+    // Delete button
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
     delBtn.className = 'btn-delete small';
@@ -282,6 +388,7 @@ async function renderTable(rows) {
   div.innerHTML = '';
   div.appendChild(table);
 
+  // wire delete handlers for assets
   div.querySelectorAll('.btn-delete').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       if(!confirm('Delete asset?')) return;
@@ -322,6 +429,7 @@ if (resetBtn) {
 }
 
 window.addEventListener('load', async () => {
+  // ensure asset_other visibility matches current select on load
   const cat = document.getElementById('asset_category');
   const otherWrap = document.getElementById('asset_other_wrap');
   if (cat && otherWrap) {
@@ -333,6 +441,7 @@ window.addEventListener('load', async () => {
     });
   }
 
+  // initial data load
   await refreshEmployees();
   await loadAll();
 });

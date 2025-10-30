@@ -337,4 +337,79 @@ table tbody td .actions-container {
   table tbody td:last-child { padding-right: 10px; gap:8px; }
   .btn-delete { padding:6px 12px; font-size:13px; }
   .btn-edit { padding:6px 10px; font-size:13px; }
+
+  /* ---------- MOBILE: Convert table rows into stacked cards ----------
+     This keeps desktop/tablet layout unchanged. On small screens we:
+     - hide the table header
+     - make each table row a card (block)
+     - show labels via the data-label attributes provided by JS
+     - ensure action buttons stay inside the card
+  */
+  table { border: 0; min-width: unset; width: 100%; }
+  thead { display: none; }
+  tbody { display: block; }
+  tbody tr {
+    display: block;
+    background: var(--card-bg);
+    margin: 12px 0;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--soft-border);
+    box-shadow: var(--shadow-sm);
+  }
+  tbody td {
+    display: block;
+    width: 100%;
+    padding: 8px 0;
+    border-bottom: none;
+  }
+  /* label shown above the cell value, using the data-label attribute */
+  tbody td:before {
+    content: attr(data-label);
+    display: block;
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+    font-weight: 700;
+  }
+  /* actions row: keep buttons in a row at the end of the card */
+  tbody td:last-child {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 10px;
+  }
+  /* subtle reduce spacing inside small-screen modal if any */
+  ._modal { padding: 12px; }
+}
+
+/* Fix header overlap on narrow screens: stack brand + search pill */
+@media (max-width: 640px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;               /* space between brand and search pill */
+  }
+
+  /* make brand use compact spacing so it doesn't push the pill */
+  .brand {
+    line-height: 1.05;
+    font-size: 1.25rem;
+    gap: 8px;
+    white-space: normal;
+  }
+
+  /* search pill should be full width and appear below the brand */
+  .search-pill {
+    width: 100%;
+    min-width: 0;
+    order: 2;
+    padding: 10px;
+  }
+
+  /* keep the header search button aligned at the end inside the pill */
+  .search-pill .btn-submit {
+    margin-left: 8px;
+    white-space: nowrap;
+  }
 }
