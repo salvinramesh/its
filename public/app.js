@@ -2,7 +2,7 @@
 // Single-file client for ITS Actionfi — makes Edit a visible link to /user.html?id=...
 async function api(path, opts) {
   const res = await fetch(path, opts);
-  if(!res.ok) {
+  if (!res.ok) {
     const txt = await res.text();
     throw new Error(txt || 'API error');
   }
@@ -16,7 +16,6 @@ async function refreshEmployees() {
   sel.innerHTML = '<option value="">-- none --</option>';
   const emps = await api('/api/employees');
 
-  // populate assign dropdown
   emps.forEach(e => {
     const opt = document.createElement('option');
     opt.value = e.id;
@@ -24,7 +23,12 @@ async function refreshEmployees() {
     sel.appendChild(opt);
   });
 
-  // populate employees list in the Add / Edit Employee panel
+  // restore last selected employee if saved
+  const last = localStorage.getItem('lastAssignedEmployee');
+  if (last && sel.querySelector(`option[value="${last}"]`)) {
+    sel.value = last;
+  }
+
   const listWrap = document.getElementById('employees_list');
   if (!listWrap) return;
   if (!emps.length) {
@@ -33,7 +37,8 @@ async function refreshEmployees() {
   }
 
   const table = document.createElement('table');
-  table.innerHTML = '<thead><tr><th>Employee ID</th><th>Name</th><th>Email</th><th style="text-align:right">Actions</th></tr></thead>';
+  table.innerHTML =
+    '<thead><tr><th>Employee ID</th><th>Name</th><th>Email</th><th style="text-align:right">Actions</th></tr></thead>';
   const tbody = document.createElement('tbody');
 
   emps.forEach(e => {
@@ -41,30 +46,22 @@ async function refreshEmployees() {
 
     const tdId = document.createElement('td');
     tdId.textContent = e.employee_id;
-    tdId.setAttribute('data-label', 'Employee ID');
 
     const tdName = document.createElement('td');
     tdName.textContent = e.name;
-    tdName.setAttribute('data-label', 'Name');
 
     const tdEmail = document.createElement('td');
     tdEmail.textContent = e.email || '';
-    tdEmail.setAttribute('data-label', 'Email');
 
     const tdActions = document.createElement('td');
     tdActions.style.textAlign = 'right';
-    tdActions.setAttribute('data-label', 'Actions');
 
-    // Create a visible link for Edit that goes to user.html?id=<id>
     const editLink = document.createElement('a');
     editLink.href = `/user.html?id=${e.id}`;
     editLink.className = 'btn-small primary';
     editLink.style.marginRight = '8px';
-    editLink.style.textDecoration = 'none';
-    editLink.style.display = 'inline-block';
     editLink.textContent = 'Edit';
 
-    // Delete button (with dataset id, used by handler)
     const delBtn = document.createElement('button');
     delBtn.className = 'btn-small danger';
     delBtn.textContent = 'Delete';
@@ -72,12 +69,10 @@ async function refreshEmployees() {
 
     tdActions.appendChild(editLink);
     tdActions.appendChild(delBtn);
-
     tr.appendChild(tdId);
     tr.appendChild(tdName);
     tr.appendChild(tdEmail);
     tr.appendChild(tdActions);
-
     tbody.appendChild(tr);
   });
 
@@ -85,7 +80,6 @@ async function refreshEmployees() {
   listWrap.innerHTML = '';
   listWrap.appendChild(table);
 
-  // wire delete handlers (added after DOM insertion)
   listWrap.querySelectorAll('button[data-id]').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = btn.getAttribute('data-id');
@@ -93,7 +87,7 @@ async function refreshEmployees() {
       try {
         await api(`/api/employees/${id}`, { method: 'DELETE' });
         await refreshEmployees();
-        await loadAll(); // refresh assets listing to reflect any changes
+        await loadAll();
       } catch (err) {
         alert('Delete failed: ' + (err.message || err));
       }
@@ -109,13 +103,22 @@ if (addEmpBtn) {
       const employee_id = document.getElementById('emp_id').value.trim();
       const name = document.getElementById('emp_name').value.trim();
       const email = document.getElementById('emp_email').value.trim();
-      if(!employee_id || !name) { alert('employee id and name required'); return; }
-      await api('/api/employees', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ employee_id, name, email })});
-      document.getElementById('emp_id').value='';document.getElementById('emp_name').value='';document.getElementById('emp_email').value='';
+      if (!employee_id || !name) {
+        alert('employee id and name required');
+        return;
+      }
+      await api('/api/employees', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ employee_id, name, email })
+      });
+      document.getElementById('emp_id').value = '';
+      document.getElementById('emp_name').value = '';
+      document.getElementById('emp_email').value = '';
       await refreshEmployees();
       alert('Employee added');
-    } catch(e) {
-      alert('Error: '+ (e.message || e));
+    } catch (e) {
+      alert('Error: ' + (e.message || e));
       console.error(e);
     }
   });
@@ -130,53 +133,71 @@ if (addAssetBtn) {
       const serial_number = document.getElementById('serial_number').value.trim();
       const category = document.getElementById('asset_category').value;
       const asset_other = document.getElementById('asset_other') ? document.getElementById('asset_other').value.trim() : '';
-      const assigned_to = document.getElementById('assign_select').value || null;
+      const assignSelect = document.getElementById('assign_select');
+      const assigned_to = assignSelect.value || null;
 
-      // determine final type value to send
       let type;
       if (category === 'Others') {
-        if (!asset_other) { alert('Please specify the other category'); return; }
+        if (!asset_other) {
+          alert('Please specify the other category');
+          return;
+        }
         type = asset_other;
       } else {
         type = category;
       }
 
-      if(!asset_number || !type) { alert('asset number and category required'); return; }
+      if (!asset_number || !type) {
+        alert('asset number and category required');
+        return;
+      }
 
-      await api('/api/assets', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ asset_number, serial_number, type, assigned_to })});
+      // Save current assigned employee selection before add
+      if (assigned_to) {
+        localStorage.setItem('lastAssignedEmployee', assigned_to);
+      } else {
+        localStorage.removeItem('lastAssignedEmployee');
+      }
 
-      // clear form
-      document.getElementById('asset_number').value='';
-      document.getElementById('serial_number').value='';
-      document.getElementById('asset_category').value='Laptop';
-      if (document.getElementById('asset_other')) document.getElementById('asset_other').value='';
-      document.getElementById('assign_select').value='';
+      await api('/api/assets', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ asset_number, serial_number, type, assigned_to })
+      });
 
-      // hide other input after reset (if shown)
+      // clear form but keep the employee selection locked
+      document.getElementById('asset_number').value = '';
+      document.getElementById('serial_number').value = '';
+      document.getElementById('asset_category').value = '';
+      if (document.getElementById('asset_other')) document.getElementById('asset_other').value = '';
+
+      const last = localStorage.getItem('lastAssignedEmployee');
+      if (last && assignSelect.querySelector(`option[value="${last}"]`)) {
+        assignSelect.value = last;
+      }
+
       const otherWrap = document.getElementById('asset_other_wrap');
       if (otherWrap) otherWrap.style.display = 'none';
 
       alert('Asset added');
       loadAll();
-    } catch(e) { alert('Error: '+e.message); }
+    } catch (e) {
+      alert('Error: ' + e.message);
+    }
   });
 }
 
 /* ---------- Asset Edit modal & table rendering ---------- */
-
+// (Unchanged below)
 async function openEditModal(asset) {
-  // ensure we have current employees list for assignment
   const emps = await api('/api/employees');
-
-  // create overlay
   let overlay = document.querySelector('._modal-overlay-asset');
-  if (overlay) overlay.remove(); // remove existing (safety)
+  if (overlay) overlay.remove();
   overlay = document.createElement('div');
   overlay.className = '_modal-overlay-asset';
 
   const modal = document.createElement('div');
   modal.className = '_modal';
-
   modal.innerHTML = `
     <h3>Edit Asset</h3>
     <div class="row">
@@ -229,7 +250,6 @@ async function openEditModal(asset) {
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
 
-  // populate employees dropdown
   const editAssigned = modal.querySelector('#edit_assigned');
   emps.forEach(e => {
     const opt = document.createElement('option');
@@ -238,10 +258,8 @@ async function openEditModal(asset) {
     editAssigned.appendChild(opt);
   });
 
-  // set current values
   const editCategory = modal.querySelector('#edit_category');
   const currentType = (asset.type || '').trim();
-  // set select by matching ignoring case; fallback to 'Others' and fill edit_other
   let matched = false;
   Array.from(editCategory.options).forEach(o => {
     if (o.value.trim().toLowerCase() === currentType.toLowerCase()) {
@@ -260,25 +278,18 @@ async function openEditModal(asset) {
     editOther.value = '';
   }
 
-  // set assigned id (asset.assigned_to exists as a numeric id)
-  if (asset.assigned_to) {
-    editAssigned.value = asset.assigned_to;
-  } else {
-    editAssigned.value = '';
-  }
+  if (asset.assigned_to) editAssigned.value = asset.assigned_to;
 
-  // event: show/hide other input
   editCategory.addEventListener('change', () => {
     if (editCategory.value === 'Others') editOtherCol.style.display = 'block';
-    else { editOtherCol.style.display = 'none'; editOther.value = ''; }
+    else {
+      editOtherCol.style.display = 'none';
+      editOther.value = '';
+    }
   });
 
-  // Cancel button
-  modal.querySelector('#editCancel').addEventListener('click', () => {
-    overlay.remove();
-  });
+  modal.querySelector('#editCancel').addEventListener('click', () => overlay.remove());
 
-  // Save button
   modal.querySelector('#editSave').addEventListener('click', async () => {
     const newAssetNumber = modal.querySelector('#edit_asset_number').value.trim();
     const newSerial = modal.querySelector('#edit_serial').value.trim();
@@ -288,11 +299,17 @@ async function openEditModal(asset) {
 
     let finalType = categoryVal;
     if (categoryVal === 'Others') {
-      if (!otherVal) { alert('Please specify other category'); return; }
+      if (!otherVal) {
+        alert('Please specify other category');
+        return;
+      }
       finalType = otherVal;
     }
 
-    if (!newAssetNumber || !finalType) { alert('Asset number and category required'); return; }
+    if (!newAssetNumber || !finalType) {
+      alert('Asset number and category required');
+      return;
+    }
 
     try {
       await api(`/api/assets/${asset.id}`, {
@@ -313,20 +330,24 @@ async function openEditModal(asset) {
   });
 }
 
-// escape helper to avoid injecting quotes
 function escapeHtml(s) {
   if (s === null || s === undefined) return '';
-  return String(s).replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  return String(s).replace(/[&<>"']/g, m =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])
+  );
 }
 
-/* ---------- Table rendering with Edit/Delete buttons (assets) ---------- */
-
+/* ---------- Table rendering ---------- */
 async function renderTable(rows) {
   const div = document.getElementById('results');
-  if(!rows.length) { div.innerHTML = '<p class="small">No results</p>'; return; }
+  if (!rows.length) {
+    div.innerHTML = '<p class="small">No results</p>';
+    return;
+  }
 
   const table = document.createElement('table');
-  table.innerHTML = '<thead><tr><th>Asset #</th><th>Serial</th><th>Category</th><th>Assigned To</th><th>Actions</th></tr></thead>';
+  table.innerHTML =
+    '<thead><tr><th>Asset #</th><th>Serial</th><th>Category</th><th>Assigned To</th><th>Actions</th></tr></thead>';
   const tbody = document.createElement('tbody');
 
   rows.forEach(r => {
@@ -334,19 +355,15 @@ async function renderTable(rows) {
 
     const tdAsset = document.createElement('td');
     tdAsset.textContent = r.asset_number;
-    tdAsset.setAttribute('data-label', 'Asset #');
 
     const tdSerial = document.createElement('td');
     tdSerial.textContent = r.serial_number || '';
-    tdSerial.setAttribute('data-label', 'Serial');
 
     const tdType = document.createElement('td');
     tdType.textContent = r.type || '';
-    tdType.setAttribute('data-label', 'Category');
 
     const tdAssigned = document.createElement('td');
     tdAssigned.textContent = r.assigned_name ? `${r.assigned_name} (${r.assigned_employee_id})` : '';
-    tdAssigned.setAttribute('data-label', 'Assigned To');
 
     const tdActions = document.createElement('td');
     tdActions.style.whiteSpace = 'nowrap';
@@ -354,18 +371,13 @@ async function renderTable(rows) {
     tdActions.style.gap = '8px';
     tdActions.style.alignItems = 'center';
     tdActions.style.justifyContent = 'flex-end';
-    tdActions.setAttribute('data-label', 'Actions');
 
-    // Edit button (asset edit modal)
     const editBtn = document.createElement('button');
     editBtn.type = 'button';
     editBtn.className = 'btn-edit';
     editBtn.textContent = 'Edit';
-    editBtn.addEventListener('click', () => {
-      openEditModal(r);
-    });
+    editBtn.addEventListener('click', () => openEditModal(r));
 
-    // Delete button
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
     delBtn.className = 'btn-delete small';
@@ -380,7 +392,6 @@ async function renderTable(rows) {
     tr.appendChild(tdType);
     tr.appendChild(tdAssigned);
     tr.appendChild(tdActions);
-
     tbody.appendChild(tr);
   });
 
@@ -388,15 +399,14 @@ async function renderTable(rows) {
   div.innerHTML = '';
   div.appendChild(table);
 
-  // wire delete handlers for assets
   div.querySelectorAll('.btn-delete').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      if(!confirm('Delete asset?')) return;
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete asset?')) return;
       const id = btn.getAttribute('data-id');
       try {
-        await api('/api/assets/'+id, { method:'DELETE' });
+        await api('/api/assets/' + id, { method: 'DELETE' });
         loadAll();
-      } catch(err) {
+      } catch (err) {
         alert('Delete failed: ' + err.message);
       }
     });
@@ -408,14 +418,16 @@ async function loadAll() {
   renderTable(rows);
 }
 
-/* ---------- Search & other handlers ---------- */
-
+/* ---------- Search handlers ---------- */
 const searchBtn = document.getElementById('searchBtn');
 if (searchBtn) {
   searchBtn.addEventListener('click', async () => {
     const q = document.getElementById('search_q').value.trim();
-    if(!q) { loadAll(); return; }
-    const rows = await api('/api/search?q='+encodeURIComponent(q));
+    if (!q) {
+      loadAll();
+      return;
+    }
+    const rows = await api('/api/search?q=' + encodeURIComponent(q));
     renderTable(rows);
   });
 }
@@ -423,25 +435,21 @@ if (searchBtn) {
 const resetBtn = document.getElementById('resetBtn');
 if (resetBtn) {
   resetBtn.addEventListener('click', async () => {
-    document.getElementById('search_q').value='';
+    document.getElementById('search_q').value = '';
     loadAll();
   });
 }
 
 window.addEventListener('load', async () => {
-  // ensure asset_other visibility matches current select on load
   const cat = document.getElementById('asset_category');
   const otherWrap = document.getElementById('asset_other_wrap');
   if (cat && otherWrap) {
-    if (cat.value === 'Others') otherWrap.style.display = 'block';
-    else otherWrap.style.display = 'none';
-
+    otherWrap.style.display = cat.value === 'Others' ? 'block' : 'none';
     cat.addEventListener('change', () => {
       otherWrap.style.display = cat.value === 'Others' ? 'block' : 'none';
     });
   }
 
-  // initial data load
   await refreshEmployees();
   await loadAll();
 });
