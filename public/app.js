@@ -1,5 +1,6 @@
 // public/app.js
-// Single-file client for ITS Actionfi — makes Edit a visible link to /user.html?id=...
+// Single-file client for ITS Actionfi — Edit modal now supports laptop_details
+
 async function api(path, opts) {
   const res = await fetch(path, opts);
   if (!res.ok) {
@@ -124,7 +125,101 @@ if (addEmpBtn) {
   });
 }
 
-/* ---------- Asset handlers ---------- */
+/* ---------- Laptop details modal state ---------- */
+// stored in-memory until asset is added (or page reload)
+let currentLaptopDetails = null;
+
+/* Create and open laptop details modal. Prefills fields if currentLaptopDetails exists. */
+function openLaptopDetailsModal() {
+  let overlay = document.querySelector('._modal-overlay-laptop');
+  if (overlay) overlay.remove();
+
+  overlay = document.createElement('div');
+  overlay.className = '_modal-overlay-laptop';
+
+  const modal = document.createElement('div');
+  modal.className = '_modal';
+  modal.innerHTML = `
+    <h3>Laptop / Desktop details</h3>
+
+    <div class="row" style="margin-bottom:10px;">
+      <div class="col">
+        <label for="lap_cpu">CPU</label>
+        <input id="lap_cpu" placeholder="e.g. Intel i7-1165G7" />
+      </div>
+      <div class="col">
+        <label for="lap_ram">RAM</label>
+        <input id="lap_ram" placeholder="e.g. 16GB" />
+      </div>
+    </div>
+
+    <div class="row" style="margin-bottom:10px;">
+      <div class="col">
+        <label for="lap_storage">Storage (SSD/HDD)</label>
+        <input id="lap_storage" placeholder="e.g. 512GB SSD" />
+      </div>
+      <div class="col">
+        <label for="lap_other_short">Other (short)</label>
+        <input id="lap_other_short" placeholder="e.g. 14-inch, integrated GPU" />
+      </div>
+    </div>
+
+    <div style="margin-bottom:8px;">
+      <label for="lap_other">Other details (notes)</label>
+      <textarea id="lap_other" placeholder="Additional details..."></textarea>
+    </div>
+
+    <div class="actions">
+      <button id="lapCancel" class="btn-small plain">Cancel</button>
+      <button id="lapSave" class="btn-small primary">Save</button>
+    </div>
+  `;
+
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  // Prefill if data exists
+  if (currentLaptopDetails) {
+    modal.querySelector('#lap_cpu').value = currentLaptopDetails.cpu || '';
+    modal.querySelector('#lap_ram').value = currentLaptopDetails.ram || '';
+    modal.querySelector('#lap_storage').value = currentLaptopDetails.storage || '';
+    modal.querySelector('#lap_other_short').value = currentLaptopDetails.other_short || '';
+    modal.querySelector('#lap_other').value = currentLaptopDetails.other || '';
+  }
+
+  modal.querySelector('#lapCancel').addEventListener('click', () => {
+    overlay.remove();
+  });
+
+  modal.querySelector('#lapSave').addEventListener('click', () => {
+    const cpu = modal.querySelector('#lap_cpu').value.trim();
+    const ram = modal.querySelector('#lap_ram').value.trim();
+    const storage = modal.querySelector('#lap_storage').value.trim();
+    const other_short = modal.querySelector('#lap_other_short').value.trim();
+    const other = modal.querySelector('#lap_other').value.trim();
+
+    if (!cpu && !ram && !storage && !other && !other_short) {
+      if (!confirm('No details entered. Do you want to save empty details?')) return;
+    }
+
+    currentLaptopDetails = { cpu, ram, storage, other_short, other };
+    updateLaptopButtonUI();
+    overlay.remove();
+  });
+}
+
+/* Helper: update button text / state */
+function updateLaptopButtonUI() {
+  const btn = document.getElementById('addLaptopDetailsBtn');
+  if (!btn) return;
+  if (currentLaptopDetails && (currentLaptopDetails.cpu || currentLaptopDetails.ram || currentLaptopDetails.storage || currentLaptopDetails.other || currentLaptopDetails.other_short)) {
+    btn.textContent = 'Edit Item Details ✓';
+  } else {
+    btn.textContent = 'Add Item Details';
+  }
+}
+
+/* ---------- Asset handlers (modified to include laptop_details) ---------- */
 const addAssetBtn = document.getElementById('addAssetBtn');
 if (addAssetBtn) {
   addAssetBtn.addEventListener('click', async () => {
@@ -152,6 +247,12 @@ if (addAssetBtn) {
         return;
       }
 
+      // If category is Laptop or Desktop, include laptop details (if any)
+      let laptop_details_to_send = null;
+      if (category === 'Laptop' || category === 'Desktop') {
+        laptop_details_to_send = currentLaptopDetails || null;
+      }
+
       // Save current assigned employee selection before add
       if (assigned_to) {
         localStorage.setItem('lastAssignedEmployee', assigned_to);
@@ -159,10 +260,13 @@ if (addAssetBtn) {
         localStorage.removeItem('lastAssignedEmployee');
       }
 
+      const payload = { asset_number, serial_number, type, assigned_to };
+      if (laptop_details_to_send) payload.laptop_details = laptop_details_to_send;
+
       await api('/api/assets', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ asset_number, serial_number, type, assigned_to })
+        body: JSON.stringify(payload)
       });
 
       // clear form but keep the employee selection locked
@@ -170,6 +274,10 @@ if (addAssetBtn) {
       document.getElementById('serial_number').value = '';
       document.getElementById('asset_category').value = '';
       if (document.getElementById('asset_other')) document.getElementById('asset_other').value = '';
+
+      // clear saved laptop details when category cleared
+      currentLaptopDetails = null;
+      updateLaptopButtonUI();
 
       const last = localStorage.getItem('lastAssignedEmployee');
       if (last && assignSelect.querySelector(`option[value="${last}"]`)) {
@@ -187,10 +295,19 @@ if (addAssetBtn) {
   });
 }
 
-/* ---------- Asset Edit modal & table rendering ---------- */
-// (Unchanged below)
+/* ---------- Edit modal & table rendering (enhanced to show/edit laptop_details) ---------- */
 async function openEditModal(asset) {
-  const emps = await api('/api/employees');
+  // fetch fresh asset to get laptop_details if server persisted it
+  try {
+    const fresh = await api(`/api/assets/${asset.id}`);
+    if (fresh && typeof fresh === 'object') asset = fresh;
+  } catch (err) {
+    console.warn('Could not fetch fresh asset:', err && err.message ? err.message : err);
+  }
+
+  const emps = await api('/api/employees').catch(() => []);
+
+  // remove existing modal overlay if present
   let overlay = document.querySelector('._modal-overlay-asset');
   if (overlay) overlay.remove();
   overlay = document.createElement('div');
@@ -198,6 +315,11 @@ async function openEditModal(asset) {
 
   const modal = document.createElement('div');
   modal.className = '_modal';
+
+  // local copy of laptop details for edit session
+  let editLaptopDetails = (asset && asset.laptop_details) ? JSON.parse(JSON.stringify(asset.laptop_details)) : null;
+  const details = editLaptopDetails || {};
+
   modal.innerHTML = `
     <h3>Edit Asset</h3>
     <div class="row">
@@ -231,6 +353,38 @@ async function openEditModal(asset) {
       </div>
     </div>
 
+    <!-- Laptop Details Inline (shown when Laptop/Desktop selected) -->
+    <div id="laptopDetailsWrap" style="display:none;margin-top:10px;">
+      <h4 style="margin-bottom:6px;">Laptop / Desktop Details</h4>
+
+      <div class="row" style="margin-bottom:8px;">
+        <div class="col">
+          <label>CPU</label>
+          <input id="lap_cpu" placeholder="e.g. Intel i7-1165G7" value="${escapeHtml(details.cpu || '')}" />
+        </div>
+        <div class="col">
+          <label>RAM</label>
+          <input id="lap_ram" placeholder="e.g. 16GB" value="${escapeHtml(details.ram || '')}" />
+        </div>
+      </div>
+
+      <div class="row" style="margin-bottom:8px;">
+        <div class="col">
+          <label>Storage (SSD/HDD)</label>
+          <input id="lap_storage" placeholder="e.g. 512GB SSD" value="${escapeHtml(details.storage || '')}" />
+        </div>
+        <div class="col">
+          <label>Other (short)</label>
+          <input id="lap_other_short" placeholder="e.g. 14-inch, integrated GPU" value="${escapeHtml(details.other_short || '')}" />
+        </div>
+      </div>
+
+      <div style="margin-bottom:8px;">
+        <label>Other details (notes)</label>
+        <textarea id="lap_other" placeholder="Additional details...">${escapeHtml(details.other || '')}</textarea>
+      </div>
+    </div>
+
     <div style="height:12px"></div>
 
     <div class="row">
@@ -250,6 +404,7 @@ async function openEditModal(asset) {
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
 
+  // populate employees dropdown
   const editAssigned = modal.querySelector('#edit_assigned');
   emps.forEach(e => {
     const opt = document.createElement('option');
@@ -270,22 +425,43 @@ async function openEditModal(asset) {
   const editOtherCol = modal.querySelector('#edit_other_col');
   const editOther = modal.querySelector('#edit_other');
   if (!matched) {
-    editCategory.value = 'Others';
-    editOtherCol.style.display = 'block';
-    editOther.value = currentType;
+    if (currentType) {
+      editCategory.value = 'Others';
+      editOtherCol.style.display = 'block';
+      editOther.value = currentType;
+    } else {
+      editOtherCol.style.display = 'none';
+      editOther.value = '';
+    }
   } else {
     editOtherCol.style.display = 'none';
     editOther.value = '';
   }
 
-  if (asset.assigned_to) editAssigned.value = asset.assigned_to;
+  modal.querySelector('#edit_assigned').value = asset.assigned_to || '';
 
+  const laptopWrap = modal.querySelector('#laptopDetailsWrap');
+
+  function updateLaptopVisibility() {
+    const catVal = (editCategory.value || '').trim().toLowerCase();
+    if (catVal === 'laptop' || catVal === 'desktop') {
+      laptopWrap.style.display = 'block';
+    } else {
+      laptopWrap.style.display = 'none';
+    }
+    if (!(catVal === 'laptop' || catVal === 'desktop')) {
+      editLaptopDetails = null;
+    }
+  }
+
+  // initialize visibility
+  updateLaptopVisibility();
+
+  // wire change events
   editCategory.addEventListener('change', () => {
     if (editCategory.value === 'Others') editOtherCol.style.display = 'block';
-    else {
-      editOtherCol.style.display = 'none';
-      editOther.value = '';
-    }
+    else { editOtherCol.style.display = 'none'; editOther.value = ''; }
+    updateLaptopVisibility();
   });
 
   modal.querySelector('#editCancel').addEventListener('click', () => overlay.remove());
@@ -299,34 +475,53 @@ async function openEditModal(asset) {
 
     let finalType = categoryVal;
     if (categoryVal === 'Others') {
-      if (!otherVal) {
-        alert('Please specify other category');
-        return;
-      }
+      if (!otherVal) { alert('Please specify other category'); return; }
       finalType = otherVal;
     }
 
-    if (!newAssetNumber || !finalType) {
-      alert('Asset number and category required');
-      return;
+    if (!newAssetNumber || !finalType) { alert('Asset number and category required'); return; }
+
+    const payload = {
+      asset_number: newAssetNumber,
+      serial_number: newSerial,
+      type: finalType,
+      assigned_to: assignedVal
+    };
+
+    const cv = (categoryVal || '').trim().toLowerCase();
+    if (cv === 'laptop' || cv === 'desktop') {
+      // read inline fields into laptop_details
+      const cpu = modal.querySelector('#lap_cpu').value.trim();
+      const ram = modal.querySelector('#lap_ram').value.trim();
+      const storage = modal.querySelector('#lap_storage').value.trim();
+      const other_short = modal.querySelector('#lap_other_short').value.trim();
+      const other = modal.querySelector('#lap_other').value.trim();
+
+      if (!cpu && !ram && !storage && !other_short && !other) {
+        payload.laptop_details = null;
+      } else {
+        payload.laptop_details = { cpu, ram, storage, other_short, other };
+      }
+    } else {
+      payload.laptop_details = null;
     }
 
     try {
       await api(`/api/assets/${asset.id}`, {
         method: 'PUT',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          asset_number: newAssetNumber,
-          serial_number: newSerial,
-          type: finalType,
-          assigned_to: assignedVal
-        })
+        body: JSON.stringify(payload)
       });
       overlay.remove();
       loadAll();
     } catch (err) {
-      alert('Save failed: ' + err.message);
+      alert('Save failed: ' + (err.message || err));
     }
+  });
+
+  // close when clicking outside modal
+  overlay.addEventListener('click', (ev) => {
+    if (ev.target === overlay) overlay.remove();
   });
 }
 
@@ -440,14 +635,42 @@ if (resetBtn) {
   });
 }
 
+/* ---------- Setup on load: category visibility, laptop button handlers ---------- */
 window.addEventListener('load', async () => {
   const cat = document.getElementById('asset_category');
   const otherWrap = document.getElementById('asset_other_wrap');
+  const laptopRow = document.getElementById('laptopDetailsRow');
+  const laptopBtn = document.getElementById('addLaptopDetailsBtn');
+
   if (cat && otherWrap) {
+    // initial visibility
     otherWrap.style.display = cat.value === 'Others' ? 'block' : 'none';
     cat.addEventListener('change', () => {
       otherWrap.style.display = cat.value === 'Others' ? 'block' : 'none';
+
+      // laptop button visibility & clearing details if not laptop/desktop
+      if (cat.value === 'Laptop' || cat.value === 'Desktop') {
+        if (laptopRow) laptopRow.style.display = 'flex';
+      } else {
+        if (laptopRow) laptopRow.style.display = 'none';
+        currentLaptopDetails = null;
+        updateLaptopButtonUI();
+      }
     });
+
+    // set initial laptop button visibility
+    if (cat.value === 'Laptop' || cat.value === 'Desktop') {
+      if (laptopRow) laptopRow.style.display = 'flex';
+    } else {
+      if (laptopRow) laptopRow.style.display = 'none';
+    }
+  }
+
+  if (laptopBtn) {
+    laptopBtn.addEventListener('click', () => {
+      openLaptopDetailsModal();
+    });
+    updateLaptopButtonUI();
   }
 
   await refreshEmployees();

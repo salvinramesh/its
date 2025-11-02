@@ -11,62 +11,21 @@
     .header-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:12px; }
     h2 { margin:0; font-size:26px; }
 
-    /* Card wrapper */
     .card { background:#fff; border-radius:12px; padding:18px; box-shadow:0 10px 30px rgba(20,30,60,0.06); }
 
-    /* Table styling */
     table { width:100%; border-collapse:collapse; margin-top:12px; }
-    th, td { text-align:left; padding:14px 12px; border-bottom:1px solid #f1f5f9; }
+    th, td { text-align:left; padding:14px 12px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
     th { color:#6b7280; font-weight:600; font-size:14px; }
     td { color:#111827; font-size:15px; }
     tr:last-child td { border-bottom:none; }
 
-    /* Buttons (match homepage) */
-    .btn-submit {
-      padding:10px 16px;
-      border-radius:10px;
-      border:0;
-      cursor:pointer;
-      background: linear-gradient(#3aa0ff, #2078f0);
-      color:#fff;
-      box-shadow: 0 6px 18px rgba(32,120,240,0.18);
-      font-weight:600;
-    }
-    .btn-edit {
-      background:#fff;
-      border:1px solid #e6e9ee;
-      color:#111827;
-      box-shadow:0 2px 6px rgba(0,0,0,0.05);
-      padding:8px 14px;
-      border-radius:8px;
-      font-weight:600;
-      cursor:pointer;
-    }
-    .btn-delete {
-      background:linear-gradient(90deg,#ff6b7a,#ff2b5b);
-      color:#fff;
-      padding:8px 14px;
-      border-radius:10px;
-      font-weight:700;
-      box-shadow:0 8px 20px rgba(255,43,75,0.22);
-      cursor:pointer;
-      border:none;
-    }
-    .btn-back {
-      padding:8px 12px;
-      background:#f3f4f6;
-      border-radius:10px;
-      border:none;
-      color:#111827;
-      cursor:pointer;
-      font-weight:500;
-      box-shadow:0 2px 6px rgba(0,0,0,0.05);
-    }
+    .btn-submit { padding:10px 16px; border-radius:10px; border:0; cursor:pointer; background: linear-gradient(#3aa0ff, #2078f0); color:#fff; box-shadow: 0 6px 18px rgba(32,120,240,0.18); font-weight:600; }
+    .btn-edit { background:#fff; border:1px solid #e6e9ee; color:#111827; box-shadow:0 2px 6px rgba(0,0,0,0.05); padding:8px 14px; border-radius:8px; font-weight:600; cursor:pointer; }
+    .btn-delete { background:linear-gradient(90deg,#ff6b7a,#ff2b5b); color:#fff; padding:8px 14px; border-radius:10px; font-weight:700; box-shadow:0 8px 20px rgba(255,43,75,0.22); cursor:pointer; border:none; }
+    .btn-back { padding:8px 12px; background:#f3f4f6; border-radius:10px; border:none; color:#111827; cursor:pointer; font-weight:500; box-shadow:0 2px 6px rgba(0,0,0,0.05); }
 
-    /* Controls row */
     .control-row { display:flex; gap:12px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
 
-    /* Pagination - matches users.html */
     .pagination-row { display:flex; justify-content:space-between; align-items:center; margin-top:18px; gap:12px; flex-wrap:wrap; }
     .pagination-left { display:flex; align-items:center; gap:12px; }
     .pagination-right { display:flex; align-items:center; gap:12px; }
@@ -82,14 +41,19 @@
 
     .muted { color:#666; font-size:0.95rem; }
 
-    /* Modal (same style as before) */
     ._modal-overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); z-index:1200; }
     ._modal { width:520px; max-width:95%; background:#fff; border-radius:10px; padding:18px; box-shadow:0 12px 40px rgba(0,0,0,0.35); }
     ._modal h3 { margin:0 0 12px; }
     ._modal .row { display:flex; gap:12px; }
     ._modal .col { flex:1; display:flex; flex-direction:column; }
     ._modal label { font-size:0.9rem; margin-bottom:6px; color:#333; }
-    ._modal input, ._modal select { padding:8px 10px; border-radius:6px; border:1px solid #ddd; }
+    ._modal input, ._modal select, ._modal textarea { padding:8px 10px; border-radius:6px; border:1px solid #ddd; }
+
+    .lap-summary { margin-top:10px; padding:10px; border-radius:8px; background:#f8fafc; border:1px solid #e6eef7; font-size:0.95rem; color:#111827; }
+
+    /* Inline SVG icon wrappers */
+    .asset-icon { width:18px; height:18px; display:inline-block; vertical-align:middle; margin-right:8px; }
+    .asset-num { vertical-align:middle; }
 
     @media (max-width:640px) {
       th, td { padding:8px; }
@@ -126,8 +90,7 @@
         <tbody></tbody>
       </table>
 
-      <!-- Pagination UI -->
-      <div class="pagination-row">
+      <div class="pagination-row" id="paginationRow">
         <div class="pagination-left">
           <div class="rows-per-page">
             <label for="pageSize">Rows per page</label>
@@ -153,6 +116,7 @@
     </div>
   </div>
 
+  <!-- no external icons; assets.js will render inline SVGs -->
   <script src="/assets.js"></script>
 </body>
 </html>

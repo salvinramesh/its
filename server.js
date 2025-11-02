@@ -128,6 +128,10 @@ app.delete('/api/employees/:id', async (req, res) => {
    Assets
    =========================== */
 
+/**
+ * GET /api/assets
+ * Return list of assets with joined employee info (assigned_name, assigned_employee_id)
+ */
 app.get('/api/assets', async (req, res) => {
   try {
     const rows = await db.all(
@@ -143,12 +147,24 @@ app.get('/api/assets', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/assets/:id
+ * Return single asset (joined) so UI can read laptop_details + assigned_name
+ */
 app.get('/api/assets/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid id' });
 
-    const row = await db.get('SELECT * FROM assets WHERE id = $1', [id]);
+    const row = await db.get(
+      `SELECT a.*, e.employee_id as assigned_employee_id, e.name as assigned_name, e.email as assigned_email
+       FROM assets a
+       LEFT JOIN employees e ON a.assigned_to = e.id
+       WHERE a.id = $1
+       LIMIT 1`,
+      [id]
+    );
+
     if (!row) return res.status(404).json({ error: 'Not found' });
     res.json(row);
   } catch (err) {
@@ -157,14 +173,19 @@ app.get('/api/assets/:id', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/assets
+ * Accepts optional laptop_details (JSON object) and persists it to assets.laptop_details (JSONB)
+ */
 app.post('/api/assets', async (req, res) => {
   try {
-    const { asset_number, serial_number, type, assigned_to } = req.body;
+    const { asset_number, serial_number, type, assigned_to, laptop_details } = req.body;
     if (!asset_number || !type) return res.status(400).json({ error: 'asset_number and type required' });
 
+    // Insert including laptop_details (will be stored as jsonb if the column is jsonb)
     const result = await db.run(
-      'INSERT INTO assets (asset_number, serial_number, type, assigned_to) VALUES ($1, $2, $3, $4) RETURNING id',
-      [asset_number, serial_number || null, type, assigned_to || null]
+      'INSERT INTO assets (asset_number, serial_number, type, assigned_to, laptop_details) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+      [asset_number, serial_number || null, type, assigned_to || null, laptop_details || null]
     );
 
     res.status(201).json({ id: result.rows[0].id });
@@ -175,16 +196,17 @@ app.post('/api/assets', async (req, res) => {
   }
 });
 
-// update asset (full replace semantics)
+// update asset (full replace semantics), also persist laptop_details
 app.put('/api/assets/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid id' });
 
-    const { asset_number, serial_number, type, assigned_to } = req.body;
+    const { asset_number, serial_number, type, assigned_to, laptop_details } = req.body;
+
     await db.run(
-      'UPDATE assets SET asset_number=$1, serial_number=$2, type=$3, assigned_to=$4 WHERE id=$5',
-      [asset_number, serial_number || null, type, assigned_to || null, id]
+      'UPDATE assets SET asset_number=$1, serial_number=$2, type=$3, assigned_to=$4, laptop_details=$5 WHERE id=$6',
+      [asset_number, serial_number || null, type, assigned_to || null, laptop_details || null, id]
     );
     res.json({ ok: true });
   } catch (err) {

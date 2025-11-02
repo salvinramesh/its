@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/styles.css" />
   <style>
     /* small page-specific styles */
-    .container { max-width:1100px; margin:28px auto; padding:0 16px; }
+    .container { max-width:1100px; margin:28px auto; padding:0 16px; font-family: Inter, system-ui, Arial; }
     .header { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
     .search-pill { display:flex; align-items:center; gap:8px; }
     h1 { margin:0 0 8px 0; }
@@ -16,7 +16,7 @@
 
     /* results table */
     .results table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 10px 30px rgba(10,20,40,0.04); }
-    .results th, .results td { padding:14px 16px; border-bottom:1px solid #f4f6f8; text-align:left; }
+    .results th, .results td { padding:14px 16px; border-bottom:1px solid #f4f6f8; text-align:left; vertical-align:middle; }
     .results thead th { background:transparent; color:#374151; font-weight:700; }
     .results tbody tr.asset-row:hover { background:#fbfdff; cursor:pointer; }
 
@@ -27,17 +27,45 @@
     .btn-delete { background:linear-gradient(90deg,#ff6b7a,#ff2b5b); color:#fff; padding:8px 12px; border-radius:10px; font-weight:700; box-shadow:0 8px 20px rgba(255,43,75,0.22); cursor:pointer; }
     .btn-back { padding:8px 12px; background:#f3f4f6; border-radius:10px; border:none; color:#111827; cursor:pointer; font-weight:500; box-shadow:0 2px 6px rgba(0,0,0,0.05); }
 
-    /* modal */
-    ._modal-overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); z-index:1200; }
-    ._modal { width:620px; max-width:95%; background:#fff; border-radius:12px; padding:22px; box-shadow:0 12px 40px rgba(0,0,0,0.35); }
-    ._modal h3 { margin-top:0; }
-    .detail-item { margin-bottom:10px; }
-    .detail-label { color:#555; font-weight:600; display:block; }
-    .detail-value { color:#111; margin-left:6px; font-weight:500; display:block; margin-top:4px; }
+    /* modal - improved responsive layout + scrolling */
+    ._modal-overlay {
+      position:fixed;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:rgba(0,0,0,0.5);
+      z-index:1200;
+      padding: 20px;
+    }
+    ._modal {
+      width: 640px;
+      max-width: calc(100% - 40px);
+      background:#fff;
+      border-radius:12px;
+      padding:22px;
+      box-shadow:0 12px 40px rgba(0,0,0,0.35);
+      max-height: 80vh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    ._modal h3 { margin-top:0; margin-bottom:12px; font-size:1.15rem; color:#111827; }
+    .detail-item { margin-bottom:12px; display:block; }
+    .detail-label { color:#4b5563; font-weight:700; display:block; font-size:0.95rem; margin-bottom:6px; }
+    .detail-value { color:#111827; font-weight:600; display:block; margin-left:0; font-size:1rem; }
 
-    @media (max-width:640px) {
-      ._modal { padding:16px; }
+    hr.modal-sep { margin:14px 0; border:0; border-top:1px solid #eee; }
+
+    /* Inline icon wrapper */
+    .asset-icon { width:18px; height:18px; display:inline-block; vertical-align:middle; margin-right:8px; }
+    .asset-num { vertical-align:middle; }
+
+    /* small screen adjustments */
+    @media (max-width:760px) {
+      ._modal { width:100%; padding:18px; max-height: 86vh; }
       .results th, .results td { padding:10px; }
+      .detail-label { font-size:0.9rem; }
+      .detail-value { font-size:0.98rem; }
     }
   </style>
 </head>

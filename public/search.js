@@ -1,4 +1,4 @@
-// public/search.js (fixed - click row shows read-only asset+user details modal)
+// public/search.js (updated - offline inline icons + laptop_details shown)
 function qs(param) {
   const u = new URL(window.location.href);
   return u.searchParams.get(param) || '';
@@ -16,10 +16,64 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
+/* ---------- small inline SVG icon set (same as assets page) ---------- */
+function getIconSvg(name) {
+  switch ((name || '').toLowerCase()) {
+    case 'laptop':
+      return `<svg class="asset-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="11" rx="1"/><path d="M2 18h20"/></svg>`;
+    case 'monitor':
+      return `<svg class="asset-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="1"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>`;
+    case 'keyboard':
+      return `<svg class="asset-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="10" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01"/></svg>`;
+    case 'mouse':
+    case 'mouse-pointer':
+      return `<svg class="asset-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2l14 7-6 3 3 9-11-19z"/></svg>`;
+    case 'package':
+      return `<svg class="asset-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.7L12 3 4 6.3A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7L12 21l8-3.3A2 2 0 0 0 21 16z"/><path d="M12 3v18"/></svg>`;
+    case 'box':
+      return `<svg class="asset-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.7L12 3 4 6.3A2 2 0 0 0 3 8v8"/><path d="M21 16l-9 4-9-4"/></svg>`;
+    case 'cpu':
+      return `<svg class="asset-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3"/></svg>`;
+    case 'printer':
+      return `<svg class="asset-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><rect x="6" y="13" width="12" height="7" rx="2"/><path d="M6 18h12"/></svg>`;
+    case 'smartphone':
+      return `<svg class="asset-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M12 18h.01"/></svg>`;
+    case 'wifi':
+      return `<svg class="asset-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8.5a16 16 0 0 1 20 0"/><path d="M5 12.5a10 10 0 0 1 14 0"/><path d="M8 15.5a4 4 0 0 1 8 0"/><path d="M12 19.5h.01"/></svg>`;
+    default:
+      return `<svg class="asset-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>`;
+  }
+}
+
+const categoryToIcon = {
+  laptop: 'laptop',
+  desktop: 'monitor',
+  keyboard: 'keyboard',
+  mouse: 'mouse',
+  monitor: 'monitor',
+  others: 'package',
+  package: 'package',
+  box: 'box',
+  printer: 'printer',
+  phone: 'smartphone',
+  router: 'wifi'
+};
+
+function chooseIconName(categoryText) {
+  if (!categoryText) return 'box';
+  const k = categoryText.trim().toLowerCase();
+  if (categoryToIcon[k]) return categoryToIcon[k];
+  if (k.includes('lap')) return 'laptop';
+  if (k.includes('desk')) return 'monitor';
+  if (k.includes('key')) return 'keyboard';
+  if (k.includes('mouse')) return 'mouse';
+  if (k.includes('monitor')) return 'monitor';
+  if (k.includes('phone')) return 'smartphone';
+  return 'package';
+}
+
 /* ---------- Edit modal (existing) ---------- */
 async function openEditModalFromSearch(asset) {
-  // this is the edit modal you previously used; unchanged
-  // fetch employees
   const emps = await api('/api/employees');
 
   let overlay = document.querySelector('._modal-overlay');
@@ -90,7 +144,6 @@ async function openEditModalFromSearch(asset) {
     editAssigned.appendChild(opt);
   });
 
-  // set category / other
   const editCategory = modal.querySelector('#edit_category');
   const currentType = (asset.type || '').trim();
   let matched = false;
@@ -111,7 +164,6 @@ async function openEditModalFromSearch(asset) {
     editOther.value = '';
   }
 
-  // set assigned id
   if (asset.assigned_to) editAssigned.value = asset.assigned_to;
   else editAssigned.value = '';
 
@@ -155,9 +207,8 @@ async function openEditModalFromSearch(asset) {
   });
 }
 
-/* ---------- Read-only details modal ---------- */
+/* ---------- Read-only details modal (updated to show laptop_details) ---------- */
 async function openDetailsModal(asset) {
-  // Fetch assigned employee details if any
   let employee = null;
   if (asset.assigned_to) {
     try {
@@ -167,7 +218,24 @@ async function openDetailsModal(asset) {
     }
   }
 
-  // build modal
+  let laptopHtml = '';
+  if (asset.laptop_details && typeof asset.laptop_details === 'object') {
+    const ld = asset.laptop_details;
+    const parts = [];
+    if (ld.cpu) parts.push(`<div class="detail-item"><span class="detail-label">CPU</span><span class="detail-value">${escapeHtml(ld.cpu)}</span></div>`);
+    if (ld.ram) parts.push(`<div class="detail-item"><span class="detail-label">RAM</span><span class="detail-value">${escapeHtml(ld.ram)}</span></div>`);
+    if (ld.storage) parts.push(`<div class="detail-item"><span class="detail-label">Storage</span><span class="detail-value">${escapeHtml(ld.storage)}</span></div>`);
+    if (ld.other_short) parts.push(`<div class="detail-item"><span class="detail-label">Other (short)</span><span class="detail-value">${escapeHtml(ld.other_short)}</span></div>`);
+    if (ld.other) parts.push(`<div class="detail-item"><span class="detail-label">Notes</span><span class="detail-value">${escapeHtml(ld.other)}</span></div>`);
+    if (parts.length) {
+      laptopHtml = `
+        <hr style="margin:14px 0;border:0;border-top:1px solid #eee;">
+        <h3>Laptop / Desktop details</h3>
+        ${parts.join('')}
+      `;
+    }
+  }
+
   const overlay = document.createElement('div');
   overlay.className = '_modal-overlay';
 
@@ -180,6 +248,8 @@ async function openDetailsModal(asset) {
     <div class="detail-item"><span class="detail-label">Asset Number</span><span class="detail-value">${escapeHtml(asset.asset_number)}</span></div>
     <div class="detail-item"><span class="detail-label">Category</span><span class="detail-value">${escapeHtml(asset.type || '—')}</span></div>
     <div class="detail-item"><span class="detail-label">Serial Number</span><span class="detail-value">${escapeHtml(asset.serial_number || '—')}</span></div>
+
+    ${laptopHtml}
 
     ${employee ? `
       <hr style="margin:14px 0;border:0;border-top:1px solid #eee;">
@@ -201,7 +271,7 @@ async function openDetailsModal(asset) {
   overlay.addEventListener('click', (ev) => { if (ev.target === overlay) overlay.remove(); });
 }
 
-/* ---------- Render table ---------- */
+/* ---------- Render table (now with icons) ---------- */
 function renderTable(rows) {
   const div = document.getElementById('results');
   const msg = document.getElementById('msg');
@@ -219,16 +289,36 @@ function renderTable(rows) {
     const tr = document.createElement('tr');
     tr.className = 'asset-row';
 
-    // clicking row opens details (but we will ignore clicks on buttons)
     tr.addEventListener('click', (ev) => {
-      if (ev.target.closest('button')) return; // ignore when clicking action buttons
+      if (ev.target.closest('button')) return;
       openDetailsModal(r);
     });
 
-    const tdAsset = document.createElement('td'); tdAsset.textContent = r.asset_number; tr.appendChild(tdAsset);
-    const tdSerial = document.createElement('td'); tdSerial.textContent = r.serial_number || ''; tr.appendChild(tdSerial);
-    const tdType = document.createElement('td'); tdType.textContent = r.type || ''; tr.appendChild(tdType);
-    const tdAssigned = document.createElement('td'); tdAssigned.textContent = r.assigned_name ? `${r.assigned_name} (${r.assigned_employee_id})` : ''; tr.appendChild(tdAssigned);
+    // Asset cell with icon
+    const tdAsset = document.createElement('td');
+    const iconName = chooseIconName(r.type || '');
+    const iconHtml = getIconSvg(iconName);
+    const iconWrap = document.createElement('span');
+    iconWrap.innerHTML = iconHtml;
+
+    const assetText = document.createElement('span');
+    assetText.className = 'asset-num';
+    assetText.textContent = r.asset_number || '';
+
+    tdAsset.appendChild(iconWrap);
+    tdAsset.appendChild(assetText);
+
+    // if laptop_details exist, add small cpu icon
+    if (r.laptop_details) {
+      const cpuWrap = document.createElement('span');
+      cpuWrap.style.marginLeft = '6px';
+      cpuWrap.innerHTML = getIconSvg('cpu');
+      tdAsset.appendChild(cpuWrap);
+    }
+
+    const tdSerial = document.createElement('td'); tdSerial.textContent = r.serial_number || '';
+    const tdType = document.createElement('td'); tdType.textContent = r.type || '';
+    const tdAssigned = document.createElement('td'); tdAssigned.textContent = r.assigned_name ? `${r.assigned_name} (${r.assigned_employee_id})` : '';
 
     const tdActions = document.createElement('td');
     tdActions.style.textAlign = 'right';
@@ -261,6 +351,11 @@ function renderTable(rows) {
 
     tdActions.appendChild(editBtn);
     tdActions.appendChild(delBtn);
+
+    tr.appendChild(tdAsset);
+    tr.appendChild(tdSerial);
+    tr.appendChild(tdType);
+    tr.appendChild(tdAssigned);
     tr.appendChild(tdActions);
 
     tbody.appendChild(tr);

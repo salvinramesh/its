@@ -18,13 +18,9 @@
       gap:12px;
     }
 
-    /* left side wrapper keeps Add Employee on left */
     .actions-left { display:flex; gap:12px; align-items:center; }
-
-    /* right side wrapper places Manage Users button at the right */
     .actions-right { display:flex; gap:12px; align-items:center; }
 
-    /* small helper so the right-side button aligns visually with Add Asset */
     .btn-submit {
       padding:10px 16px;
       border-radius:10px;
@@ -34,12 +30,13 @@
       color:#fff;
       box-shadow: 0 6px 18px rgba(32,120,240,0.18);
       font-weight:600;
+      transition: transform 0.08s ease;
     }
 
-    /* make sure the small brand green button style still works if present */
+    .btn-submit:hover { transform: translateY(-1px); }
+
     .btn-submit.brand { background: linear-gradient(#19c08f,#0c8f6f); box-shadow:0 8px 20px rgba(12,143,111,0.12); color:#fff; }
 
-    /* neutral plain style used for some small buttons */
     .btn-submit.plain {
       background: #fff;
       color: #111;
@@ -47,13 +44,11 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.04);
     }
 
-    /* keep layout responsive */
     @media (max-width:900px) {
       .actions-row { flex-direction: column; align-items:stretch; }
       .actions-right { justify-content:flex-start; }
     }
 
-    /* footer */
     footer.site-footer {
       margin-top:40px;
       padding:28px 0;
@@ -66,6 +61,63 @@
     .site-footer a { color:inherit; text-decoration:none; }
     .site-footer .small { color:#6b7280; font-size:0.95rem; }
 
+    /* Modal overlay and box (centered) */
+    ._modal-overlay-laptop,
+    ._modal-overlay-asset {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(10, 12, 16, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 5000;
+    }
+
+    ._modal {
+      background: #fff;
+      padding: 22px 24px;
+      border-radius: 12px;
+      min-width: 340px;
+      max-width: 700px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+      animation: fadeInUp 0.18s ease;
+      font-family: Inter, system-ui, Arial;
+    }
+
+    ._modal h3 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 1.15rem;
+      color: #111827;
+    }
+
+    ._modal .row { display: flex; gap: 12px; flex-wrap: wrap; }
+    ._modal .col { flex: 1; display:flex; flex-direction:column; gap:6px; min-width:140px; }
+    ._modal label { font-size:0.9rem; color:#374151; }
+    ._modal input, ._modal textarea, ._modal select {
+      padding:10px;
+      border-radius:8px;
+      border:1px solid #e6e9ee;
+      outline:none;
+      font-size:0.95rem;
+    }
+    ._modal textarea { min-height:80px; resize:vertical; }
+
+    ._modal .actions { display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
+    .btn-small { padding:8px 12px; border-radius:8px; cursor:pointer; border:0; font-size:0.95rem; }
+    .btn-small.primary { background:linear-gradient(#3aa0ff,#2078f0); color:#fff; }
+    .btn-small.plain { background:#fff; border:1px solid #e6e9ee; color:#111; }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body>
@@ -99,40 +151,30 @@
       </div>
     </section>
 
-    <!-- Panels: Add/Edit Employee | Add Asset -->
+    <!-- Panels -->
     <div class="panels" role="region" aria-label="Forms">
       <div class="panel" aria-labelledby="emp-heading" style="min-height:240px;">
         <h2 id="emp-heading">Add / Edit Employee</h2>
-
         <div class="field">
           <label for="emp_id">Employee ID</label>
           <input id="emp_id" placeholder="E.g. E1001" />
         </div>
-
         <div class="field">
           <label for="emp_name">Full name</label>
           <input id="emp_name" placeholder="Full name" />
         </div>
-
         <div class="field">
           <label for="emp_email">Email (optional)</label>
           <input id="emp_email" placeholder="Email" />
         </div>
-
-        <!-- Actions row: left = Add Employee, right = Manage Users (styled like Add Asset) -->
         <div class="actions-row">
           <div class="actions-left">
             <button id="addEmpBtn" class="btn-submit brand" type="button">Add Employee</button>
           </div>
-
           <div class="actions-right">
-            <!-- Match Add Asset styling by using same class btn-submit -->
             <button id="manageUsersBtn" class="btn-submit" type="button">Manage Users</button>
           </div>
         </div>
-
-        <!-- NOTE: employees list intentionally removed from home page.
-             Full list is at /users.html -->
       </div>
 
       <div class="panel" aria-labelledby="asset-heading" style="min-height:240px;">
@@ -171,21 +213,21 @@
           <select id="assign_select"><option value="">-- none --</option></select>
         </div>
 
-        <!-- Actions row: left = Add Asset, right = Manage Assets -->
+        <!-- Styled like Add Asset -->
+        <div class="actions-row" id="laptopDetailsRow" style="display:none; margin-top:10px;">
+          <button id="addLaptopDetailsBtn" class="btn-submit brand" type="button">Add Item Details</button>
+        </div>
+
         <div class="actions-row" style="margin-top:16px;">
           <div class="actions-left">
-            <!-- CHANGED: Add Asset now uses the same "brand" green style -->
             <button id="addAssetBtn" class="btn-submit brand" type="button">Add Asset</button>
           </div>
-
           <div class="actions-right">
             <button id="manageAssetsBtn" class="btn-submit" type="button">Manage Assets</button>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- Search section removed from home page (moved to manage assets page) -->
 
     <!-- Footer -->
     <footer class="site-footer" role="contentinfo">
@@ -194,79 +236,46 @@
           <span style="font-weight:800;color:#0b6b59">ITS</span>
           <span style="color:#111827">Actionfi</span>
         </a>
-
         <div class="links" aria-hidden="false">
           <a href="/users.html">Users</a>
           <a href="/assets.html">Assets</a>
           <a href="mailto:arunshaji@actionfi.com">Support</a>
         </div>
-
         <div class="small">© <span id="year"></span> Actionfi — Built for ITS</div>
       </div>
     </footer>
-
   </div>
 
-  <!-- App script (your existing app.js) -->
   <script src="/app.js"></script>
 
-  <!-- Header search now navigates to search.html?q=... and Get Started behavior -->
   <script>
-    // header search -> search page
     document.getElementById('searchBtnHeader').addEventListener('click', () => {
       const q = document.getElementById('search_q_header').value.trim();
       if (!q) return;
-      const url = '/search.html?q=' + encodeURIComponent(q);
-      window.location.href = url;
+      window.location.href = '/search.html?q=' + encodeURIComponent(q);
     });
 
-    // Smoothly scroll to Employee ID and focus when user clicks Get Started
     document.getElementById('heroAction').addEventListener('click', (e) => {
       e.preventDefault();
       const empInput = document.getElementById('emp_id');
       if (!empInput) return;
       empInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setTimeout(() => {
-        try { empInput.focus({ preventScroll: true }); } catch (err) { empInput.focus(); }
-      }, 250);
+      setTimeout(() => empInput.focus(), 250);
     });
 
-    // Manage Users / Assets navigation
-    document.getElementById('manageUsersBtn').addEventListener('click', () => {
-      window.location.href = '/users.html';
+    document.getElementById('manageUsersBtn').addEventListener('click', () => window.location.href='/users.html');
+    document.getElementById('manageAssetsBtn').addEventListener('click', () => window.location.href='/assets.html');
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Allow clicking outside modal to close
+    document.addEventListener('click', ev => {
+      const t = ev.target;
+      if (!t.classList) return;
+      if (t.classList.contains('_modal-overlay-laptop') || t.classList.contains('_modal-overlay-asset')) {
+        t.remove();
+      }
     });
-    document.getElementById('manageAssetsBtn').addEventListener('click', () => {
-      window.location.href = '/assets.html';
-    });
-
-    // Convenience: pressing Enter in Employee ID moves to Full name
-    const empIdInput = document.getElementById('emp_id');
-    if (empIdInput) {
-      empIdInput.addEventListener('keydown', (ev) => {
-        if (ev.key === 'Enter') {
-          ev.preventDefault();
-          const nameInput = document.getElementById('emp_name');
-          if (nameInput) {
-            nameInput.focus();
-            nameInput.select && nameInput.select();
-          }
-        }
-      });
-    }
-
-    // Asset category visibility
-    const cat = document.getElementById('asset_category');
-    const otherWrap = document.getElementById('asset_other_wrap');
-    if (cat && otherWrap) {
-      function updateOtherVisibility() { otherWrap.style.display = cat.value === 'Others' ? 'block' : 'none'; }
-      updateOtherVisibility();
-      cat.addEventListener('change', updateOtherVisibility);
-    }
-
-    // footer year
-    try {
-      document.getElementById('year').textContent = new Date().getFullYear();
-    } catch (e) {}
   </script>
 </body>
 </html>
