@@ -346,14 +346,14 @@ document.addEventListener('DOMContentLoaded', () => {
             <input id="lap_cpu" placeholder="e.g. Intel i7-1165G7" value="${escapeHtml(details.cpu || '')}" />
           </div>
           <div class="col">
-            <label>RAM</label>
+            <label>RAM (GB)</label>
             <input id="lap_ram" placeholder="e.g. 16GB" value="${escapeHtml(details.ram || '')}" />
           </div>
         </div>
 
         <div class="row" style="margin-bottom:8px;">
           <div class="col">
-            <label>Storage (SSD/HDD)</label>
+            <label>Storage (GB) </label>
             <input id="lap_storage" placeholder="e.g. 512GB SSD" value="${escapeHtml(details.storage || '')}" />
           </div>
           <div class="col">
