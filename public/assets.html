@@ -9,6 +9,19 @@
   <style>
     .page { max-width:1100px; margin:28px auto; padding:0 16px; }
     .header-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:12px; }
+
+    /* brand with logo on left */
+    .brand-left {
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    .brand-left img {
+      height:36px;
+      width:auto;
+      display:block;
+    }
+
     h2 { margin:0; font-size:26px; }
 
     .card { background:#fff; border-radius:12px; padding:18px; box-shadow:0 10px 30px rgba(20,30,60,0.06); }
@@ -66,7 +79,15 @@
 <body>
   <div class="page">
     <div class="header-row">
-      <h2>Manage Assets</h2>
+      <!-- logo (clickable) next to the page title -->
+      <div class="brand-left" aria-hidden="false">
+        <a href="/" title="Go to home" style="display:inline-flex;align-items:center;">
+          <img src="/actionfi.png" alt="Actionfi logo" />
+        </a>
+        <span class="brand-accent"></span>
+        <h2>Assets</h2>
+      </div>
+
       <button id="backBtn" class="btn-back">Back</button>
     </div>
 

@@ -149,7 +149,7 @@ body{
 
 /* brand variation (green) */
 .btn-submit.brand {
-  background: linear-gradient(90deg, #18b886, #0ea58d);
+  background: linear-gradient(90deg, #312d43, #3a4f4c);
   box-shadow: 0 10px 30px rgba(14,165,164,0.14);
 }
 

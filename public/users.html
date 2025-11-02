@@ -10,6 +10,27 @@
     /* Page layout */
     .page { max-width:1100px; margin:28px auto; padding:0 16px; }
     .header-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:12px; }
+
+    /* brand with logo on left */
+    .brand-left {
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    .brand-left img {
+      height:36px;
+      width:auto;
+      display:block;
+    }
+    .brand-title {
+      font-size:20px;
+      font-weight:800;
+      color:#0b1220;
+      display:flex;
+      align-items:baseline;
+      gap:8px;
+    }
+    .brand-title .brand-accent { color:#207dc4; margin-right:6px; font-weight:800; }
     h1 { margin:0; font-size:28px; }
 
     /* Card */
@@ -21,26 +42,82 @@
     table.users tbody td { padding:14px 12px; border-bottom:1px solid #f8fafc; vertical-align:middle; color:#111827; }
     table.users tbody tr:last-child td { border-bottom: none; }
 
-    /* Buttons (match homepage style) */
+    /* Buttons (match assets.html style and hover animation) */
     .btn {
       display:inline-flex; align-items:center; justify-content:center;
-      padding:8px 12px; border-radius:10px; border:0; cursor:pointer;
+      padding:10px 14px; border-radius:10px; border:0; cursor:pointer;
       font-weight:600; font-size:14px;
+      transition: all 0.12s ease-in-out;
     }
     .btn.primary {
-      background: linear-gradient(#3aa0ff,#2078f0); color:#fff; box-shadow:0 8px 22px rgba(32,120,240,0.14);
+      background: linear-gradient(#3aa0ff,#2078f0);
+      color:#fff;
+      box-shadow:0 6px 18px rgba(32,120,240,0.18);
     }
+    .btn.primary:hover {
+      transform: translateY(-1px);
+      box-shadow:0 8px 24px rgba(32,120,240,0.25);
+    }
+
     .btn.ghost {
-      background:#fff; color:#111827; border:1px solid #eef2f6; box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+      background:#fff;
+      color:#111827;
+      border:1px solid #eef2f6;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
     }
+    .btn.ghost:hover {
+      transform: translateY(-1px);
+      box-shadow:0 6px 14px rgba(0,0,0,0.08);
+    }
+
     .btn.danger {
-      background: linear-gradient(#ff5b6b,#ff2b45); color:#fff; box-shadow:0 10px 30px rgba(255,43,69,0.12);
+      background: linear-gradient(#ff6b7a,#ff2b5b);
+      color:#fff;
+      box-shadow:0 8px 20px rgba(255,43,75,0.22);
     }
+    .btn.danger:hover {
+      transform: translateY(-1px);
+      box-shadow:0 12px 28px rgba(255,43,75,0.3);
+    }
+
     .btn.small { padding:6px 10px; font-size:13px; border-radius:8px; }
 
-    /* Edit / Delete visual like homepage */
-    .action-edit { background:#fff; color:#111827; border:1px solid #eef2f6; box-shadow:0 6px 18px rgba(16,24,40,0.03); border-radius:10px; padding:8px 12px; }
-    .action-delete { background: linear-gradient(#ff7a85,#ff3850); color:#fff; border-radius:10px; padding:8px 12px; box-shadow:0 12px 36px rgba(255,56,80,0.14); border:0; }
+    /* Edit / Delete buttons in table */
+    .action-edit {
+      background:#fff;
+      color:#111827;
+      border:1px solid #eef2f6;
+      box-shadow:0 2px 6px rgba(0,0,0,0.05);
+      border-radius:10px;
+      padding:8px 12px;
+      font-weight:600;
+      cursor:pointer;
+      transition: all 0.12s ease-in-out;
+    }
+    .action-edit:hover {
+      transform: translateY(-1px);
+      box-shadow:0 6px 14px rgba(0,0,0,0.08);
+    }
+
+    .action-delete {
+      background: linear-gradient(#ff7a85,#ff3850);
+      color:#fff;
+      border-radius:10px;
+      padding:8px 12px;
+      box-shadow:0 8px 20px rgba(255,56,80,0.22);
+      border:0;
+      font-weight:600;
+      cursor:pointer;
+      transition: all 0.12s ease-in-out;
+    }
+    .action-delete:hover {
+      transform: translateY(-1px);
+      box-shadow:0 12px 28px rgba(255,56,80,0.3);
+    }
+
+    /* Control row (search + buttons) */
+    .control-row { display:flex; gap:12px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
+    .control-row input[type="search"] { flex:1; padding:10px;border-radius:8px;border:1px solid #ddd; font-size:14px; }
 
     /* Pagination row */
     .pagination-row { display:flex; justify-content:space-between; align-items:center; margin-top:18px; gap:12px; flex-wrap:wrap; }
@@ -52,10 +129,12 @@
 
     .pager-info { color:#6b7280; font-size:14px; }
 
-    /* pager buttons */
-    .pager-btn { padding:8px 12px; border-radius:8px; background:#fff; border:1px solid #eef2f6; cursor:pointer; box-shadow:0 3px 10px rgba(10,20,40,0.02); }
+    .pager-btn { padding:8px 12px; border-radius:8px; background:#fff; border:1px solid #eef2f6; cursor:pointer; box-shadow:0 3px 10px rgba(10,20,40,0.02); font-weight:600; transition:all 0.1s ease; }
     .pager-btn.primary { background: linear-gradient(#3aa0ff,#2078f0); color:#fff; border:0; box-shadow:0 8px 22px rgba(32,120,240,0.14); }
-    .pager-btn[disabled] { opacity:.45; cursor:not-allowed; box-shadow:none; }
+    .pager-btn:hover:not([disabled]) { transform: translateY(-1px); box-shadow:0 8px 24px rgba(32,120,240,0.25); }
+    .pager-btn[disabled] { opacity:.45; cursor:not-allowed; box-shadow:none; transform:none; }
+
+    .muted { color:#666; font-size:0.95rem; }
 
     /* Responsive tweaks */
     @media (max-width:720px) {
@@ -71,55 +150,68 @@
 <body>
   <div class="page">
     <div class="header-row">
-      <h1>Users</h1>
+      <!-- brand area with actionfi logo (clickable) + title -->
+      <div class="brand-left" aria-hidden="false">
+        <a href="/" title="Go to home" style="display:inline-flex;align-items:center;">
+          <img src="/actionfi.png" alt="Actionfi logo" />
+        </a>
+        <div class="brand-title" aria-hidden="false">
+          <span class="brand-accent"></span>
+          <span style="font-weight:800">Inventory</span>
+        </div>
+      </div>
+
       <div>
         <button id="backBtn" class="btn ghost">Back</button>
       </div>
     </div>
 
     <div class="card" id="usersCard" aria-live="polite">
+      <!-- Control row -->
+      <div class="control-row">
+        <input id="search_q" type="search" placeholder="Search employee id, name or email" aria-label="Search users" />
+        <button id="searchBtn" class="btn primary">Search</button>
+        <button id="resetBtn" class="btn ghost">Reset</button>
+      </div>
+
       <div id="tableWrap">
         <table class="users" aria-describedby="usersInfo">
           <thead>
             <tr>
-              <th style="width:18%">Employee ID</th>
-              <th style="width:36%">Name</th>
-              <th style="width:30%">Email</th>
-              <th style="width:16%; text-align:right">Actions</th>
+              <th>Employee ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th style="text-align:right">Actions</th>
             </tr>
           </thead>
-          <tbody id="usersTbody">
-            <!-- rows inserted here -->
-          </tbody>
+          <tbody id="usersTbody"></tbody>
         </table>
       </div>
 
-      <div class="pagination-row" style="margin-top:18px;">
+      <div class="pagination-row">
         <div class="pagination-left">
           <div class="rows-per-page">
             <label for="perPageSelect">Rows per page</label>
-            <select id="perPageSelect" aria-label="Rows per page">
+            <select id="perPageSelect">
               <option value="5">5</option>
               <option value="10" selected>10</option>
               <option value="25">25</option>
               <option value="50">50</option>
             </select>
           </div>
-
           <div class="pager-info" id="pagerInfo">Showing 0–0 of 0</div>
         </div>
-
         <div class="pagination-right">
-          <button id="prevBtn" class="pager-btn" aria-label="Previous page">Prev</button>
+          <button id="prevBtn" class="pager-btn">Prev</button>
           <div class="pager-info" id="pageIndicator">Page 1 / 1</div>
-          <button id="nextBtn" class="pager-btn primary" aria-label="Next page">Next</button>
+          <button id="nextBtn" class="pager-btn primary">Next</button>
         </div>
       </div>
+      <div id="usersMsg" class="muted" style="margin-top:10px;"></div>
     </div>
   </div>
 
   <script>
-    // Client-side pagination for /api/employees
     async function api(path, opts) {
       const res = await fetch(path, opts);
       const txt = await res.text();
@@ -127,8 +219,7 @@
       try { return JSON.parse(txt); } catch { return txt; }
     }
 
-    // State
-    let employees = [];
+    let employees = [], filteredEmployees = [];
     let currentPage = 1;
     let perPage = parseInt(document.getElementById('perPageSelect').value, 10) || 10;
 
@@ -138,11 +229,15 @@
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
     const perPageSelect = document.getElementById('perPageSelect');
+    const searchInput = document.getElementById('search_q');
+    const searchBtn = document.getElementById('searchBtn');
+    const resetBtn = document.getElementById('resetBtn');
 
-    // Fetch employees once
     async function loadEmployees() {
       try {
         employees = await api('/api/employees');
+        if (!Array.isArray(employees)) employees = [];
+        filteredEmployees = employees.slice();
         currentPage = 1;
         renderPage();
       } catch (err) {
@@ -153,7 +248,7 @@
 
     function renderPage() {
       perPage = parseInt(perPageSelect.value, 10) || 10;
-      const total = employees.length;
+      const total = filteredEmployees.length;
       const totalPages = Math.max(1, Math.ceil(total / perPage));
       if (currentPage > totalPages) currentPage = totalPages;
 
@@ -163,24 +258,21 @@
       usersTbody.innerHTML = '';
 
       if (total === 0) {
-        usersTbody.innerHTML = '<tr><td colspan="4" class="muted">No users yet.</td></tr>';
+        usersTbody.innerHTML = '<tr><td colspan="4" class="muted">No users found.</td></tr>';
       } else {
-        const slice = employees.slice(startIdx, endIdx);
-        slice.forEach(e => {
+        filteredEmployees.slice(startIdx, endIdx).forEach(e => {
           const tr = document.createElement('tr');
 
-          const tdId = document.createElement('td'); tdId.textContent = e.employee_id || ''; tdId.setAttribute('data-label','Employee ID');
-          const tdName = document.createElement('td'); tdName.textContent = e.name || ''; tdName.setAttribute('data-label','Name');
-          const tdEmail = document.createElement('td'); tdEmail.textContent = e.email || ''; tdEmail.setAttribute('data-label','Email');
+          const tdId = document.createElement('td'); tdId.textContent = e.employee_id || '';
+          const tdName = document.createElement('td'); tdName.textContent = e.name || '';
+          const tdEmail = document.createElement('td'); tdEmail.textContent = e.email || '';
 
           const tdActions = document.createElement('td'); tdActions.style.textAlign = 'right';
-          // Edit button (styled like homepage)
           const editBtn = document.createElement('button');
           editBtn.className = 'action-edit';
           editBtn.textContent = 'Edit';
           editBtn.addEventListener('click', () => { window.location.href = `/user.html?id=${e.id}`; });
 
-          // Delete button
           const delBtn = document.createElement('button');
           delBtn.className = 'action-delete';
           delBtn.textContent = 'Delete';
@@ -189,59 +281,44 @@
             if (!confirm('Delete this employee? This will unassign assets assigned to them.')) return;
             try {
               await api(`/api/employees/${e.id}`, { method: 'DELETE' });
-              // Refresh data (keep page if possible)
-              await loadEmployees();
+              employees = employees.filter(x => x.id !== e.id);
+              filteredEmployees = filteredEmployees.filter(x => x.id !== e.id);
+              renderPage();
             } catch (err) {
               alert('Delete failed: ' + (err.message || err));
             }
           });
 
-          tdActions.appendChild(editBtn);
-          tdActions.appendChild(delBtn);
-
-          tr.appendChild(tdId);
-          tr.appendChild(tdName);
-          tr.appendChild(tdEmail);
-          tr.appendChild(tdActions);
-
+          tdActions.append(editBtn, delBtn);
+          tr.append(tdId, tdName, tdEmail, tdActions);
           usersTbody.appendChild(tr);
         });
       }
 
-      // Update pager text and buttons
       pagerInfo.textContent = total === 0 ? 'Showing 0–0 of 0' : `Showing ${startIdx + 1}–${endIdx} of ${total}`;
-      pageIndicator.textContent = `Page ${currentPage} / ${totalPages}`;
-
+      pageIndicator.textContent = `Page ${currentPage} / ${Math.max(1, Math.ceil(total / perPage))}`;
       prevBtn.disabled = currentPage <= 1;
-      nextBtn.disabled = currentPage >= totalPages;
-
-      // adjust styling for disabled
-      prevBtn.toggleAttribute('disabled', prevBtn.disabled);
-      nextBtn.toggleAttribute('disabled', nextBtn.disabled);
+      nextBtn.disabled = currentPage >= Math.ceil(total / perPage);
     }
 
-    // Controls
-    prevBtn.addEventListener('click', () => {
-      if (currentPage <= 1) return;
-      currentPage--;
-      renderPage();
-    });
-    nextBtn.addEventListener('click', () => {
-      const total = employees.length;
-      const totalPages = Math.max(1, Math.ceil(total / perPage));
-      if (currentPage >= totalPages) return;
-      currentPage++;
-      renderPage();
-    });
-    perPageSelect.addEventListener('change', () => {
+    function runLocalSearch(q) {
+      const term = q.trim().toLowerCase();
+      filteredEmployees = !term
+        ? employees.slice()
+        : employees.filter(e => [e.employee_id, e.name, e.email].some(v => (v || '').toLowerCase().includes(term)));
       currentPage = 1;
       renderPage();
-    });
+    }
 
-    // Back button
-    document.getElementById('backBtn').addEventListener('click', () => { window.location.href = '/'; });
+    searchBtn.onclick = () => runLocalSearch(searchInput.value);
+    resetBtn.onclick = () => { searchInput.value = ''; runLocalSearch(''); };
+    searchInput.onkeydown = e => { if (e.key === 'Enter') runLocalSearch(searchInput.value); };
 
-    // Initial load
+    prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; renderPage(); } };
+    nextBtn.onclick = () => { currentPage++; renderPage(); };
+    perPageSelect.onchange = () => { currentPage = 1; renderPage(); };
+
+    document.getElementById('backBtn').onclick = () => window.location.href = '/';
     loadEmployees();
   </script>
 </body>
