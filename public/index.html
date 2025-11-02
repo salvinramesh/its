@@ -110,7 +110,20 @@
       outline:none;
       font-size:0.95rem;
     }
-    ._modal textarea { min-height:80px; resize:vertical; }
+
+    /* FIX: make textarea match inputs and span width */
+    ._modal textarea {
+      width: 100%;
+      box-sizing: border-box;     /* include padding in width calculations */
+      min-height: 110px;          /* comfortable height */
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #e6e9ee;
+      resize: vertical;
+      font-size: 14px;
+      background: #fff;
+      display: block;
+    }
 
     ._modal .actions { display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
     .btn-small { padding:8px 12px; border-radius:8px; cursor:pointer; border:0; font-size:0.95rem; }
