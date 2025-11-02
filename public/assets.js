@@ -1,4 +1,5 @@
-// public/assets.js - offline icons version
+// public/assets.js - offline icons version (fixed: rows-per-page select now works reliably)
+
 async function api(path, opts) {
   const res = await fetch(path, opts);
   const txt = await res.text();
@@ -13,7 +14,6 @@ function escapeHtml(s) {
 
 // small inline SVG icon set (simplified shapes). keys = icon names used in mappings
 function getIconSvg(name) {
-  // return small SVG string (width/height 18). Keep stroke/currentColor for theming.
   switch ((name || '').toLowerCase()) {
     case 'laptop':
       return `<svg class="asset-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="11" rx="1"/><path d="M2 18h20"/></svg>`;
@@ -37,7 +37,6 @@ function getIconSvg(name) {
     case 'wifi':
       return `<svg class="asset-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8.5a16 16 0 0 1 20 0"/><path d="M5 12.5a10 10 0 0 1 14 0"/><path d="M8 15.5a4 4 0 0 1 8 0"/><path d="M12 19.5h.01"/></svg>`;
     default:
-      // fallback small box
       return `<svg class="asset-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>`;
   }
 }
@@ -51,7 +50,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchInput = document.getElementById('search_q');
   const searchBtn = document.getElementById('searchBtn');
   const resetBtn = document.getElementById('resetBtn');
-  const pageSizeSelect = document.getElementById('pageSize');
+  // NOTE: do not permanently rely on this reference because we recreate the select in renderPaginationControls
+  let pageSizeSelect = document.getElementById('pageSize');
   const paginationRow = document.getElementById('paginationRow');
   const pagerInfo = document.getElementById('pagerInfo');
 
@@ -87,6 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let allAssets = [];
   let currentPage = 1;
+  // initial pageSize fallback; we'll re-read the live select each render
   let pageSize = parseInt((pageSizeSelect && pageSizeSelect.value) || '10', 10);
 
   async function loadAllAssets() {
@@ -122,7 +123,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderPage() {
+    // IMPORTANT: re-query the select element because renderPaginationControls may recreate it
+    pageSizeSelect = document.getElementById('pageSize');
     pageSize = parseInt((pageSizeSelect && pageSizeSelect.value) || '10', 10);
+
     const total = allAssets.length;
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
     if (currentPage > totalPages) currentPage = totalPages;
@@ -211,6 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderPaginationControls(total, totalPages) {
     if (!paginationRow) return;
 
+    // rebuild pagination row body (clear children)
     while (paginationRow.children.length > 0) paginationRow.removeChild(paginationRow.lastChild);
 
     const left = document.createElement('div');
@@ -225,6 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
     sel.innerHTML = '<option value="5">5</option><option value="10" selected>10</option><option value="25">25</option><option value="50">50</option>';
     sel.value = pageSize.toString();
     sel.addEventListener('change', () => {
+      // update pageSize then re-render starting at page 1
       pageSize = parseInt(sel.value, 10) || 10;
       currentPage = 1;
       renderPage();
@@ -242,6 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     paginationRow.appendChild(left);
 
+    // right side controls
     const right = document.createElement('div');
     right.className = 'pagination-right';
 
@@ -266,6 +273,9 @@ document.addEventListener('DOMContentLoaded', () => {
     right.appendChild(next);
 
     paginationRow.appendChild(right);
+
+    // After recreating the select, update our local reference so other code can read it if needed
+    pageSizeSelect = document.getElementById('pageSize');
   }
 
   /* ---------- Edit modal (with laptop details inline) ---------- */
@@ -520,6 +530,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Keep a listener on initial select (if present) — this is a harmless extra; the live select will manage itself
   if (pageSizeSelect) {
     pageSizeSelect.addEventListener('change', () => {
       pageSize = parseInt(pageSizeSelect.value, 10) || 10;
