@@ -201,6 +201,8 @@
           <button class="btn-submit" id="heroAction" type="button">Get Started</button>
           <button id="manageUsersBtn" class="btn-submit" type="button">Manage Users</button>
           <button id="manageAssetsBtn" class="btn-submit" type="button">Manage Assets</button>
+          <!-- NEW: Manage ISP button -->
+          <button id="manageIspBtn" class="btn-submit" type="button" aria-label="Manage ISP (opens Google Sheet)">Manage ISP</button>
         </div>
       </div>
     </section>
@@ -297,6 +299,9 @@
   <script src="/app.js"></script>
 
   <script>
+    // Google Sheet URL (opens in new tab)
+    const ISP_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1eTAyiWmdVjah4vgm_7C7_ULCBUeTh-Lh63LrSKrxMUE/edit?gid=0';
+
     document.getElementById('searchBtnHeader').addEventListener('click', () => {
       const q = document.getElementById('search_q_header').value.trim();
       if (!q) return;
@@ -313,6 +318,12 @@
 
     document.getElementById('manageUsersBtn').addEventListener('click', () => window.location.href='/users.html');
     document.getElementById('manageAssetsBtn').addEventListener('click', () => window.location.href='/assets.html');
+
+    // Manage ISP: open google sheet in a new tab
+    document.getElementById('manageIspBtn').addEventListener('click', () => {
+      // open in new tab with noopener/noreferer
+      window.open(ISP_SHEET_URL, '_blank', 'noopener,noreferrer');
+    });
 
     document.getElementById('year').textContent = new Date().getFullYear();
 
