@@ -2,16 +2,222 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
-const db = require('./db');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
+const session = require('express-session');
+const PgSession = require('connect-pg-simple')(session);
+const bcrypt = require('bcrypt');
 
+const db = require('./db'); // expects { pool, all, get, run }
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
+// If behind a proxy (nginx) and using HTTPS in prod, enable trust proxy
+if (process.env.TRUST_PROXY === '1') {
+  app.set('trust proxy', 1);
+}
+
+// Basic hardening and logging
+// Disable helmet's contentSecurityPolicy here because we use external scripts and may want to re-enable with proper nonces later
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(morgan('combined'));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// Rate limiter (global)
+const WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10);
+const MAX_REQ = parseInt(process.env.RATE_LIMIT_MAX || '200', 10);
+app.use(rateLimit({
+  windowMs: WINDOW_MS,
+  max: MAX_REQ,
+  message: { error: 'Too many requests' }
+}));
+
+// --- Sessions (Postgres-backed) ---
+if (!process.env.SESSION_SECRET) {
+  console.error('SESSION_SECRET not set in environment. Exiting.');
+  process.exit(1);
+}
+if (!db || !db.pool) {
+  console.error('db.pool not available. Ensure ./db exports { pool, all, get, run }');
+  process.exit(1);
+}
+
+app.use(session({
+  store: new PgSession({
+    pool: db.pool,
+    tableName: 'session'
+  }),
+  name: process.env.SESSION_COOKIE_NAME || 'connect.sid',
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: parseInt(process.env.SESSION_MAX_AGE_MS || String(24 * 60 * 60 * 1000), 10),
+    httpOnly: true,
+    sameSite: 'lax',
+    // secure: true // enable in production when using HTTPS
+  }
+}));
+
+// Helper to await session save
+function saveSession(req) {
+  return new Promise((resolve, reject) => {
+    if (!req.session) return resolve();
+    req.session.save(err => {
+      if (err) return reject(err);
+      resolve();
+    });
+  });
+}
+
+// Helper to detect AJAX/JSON/fetch requests robustly
+function isAjaxRequest(req) {
+  const accept = (req.get('Accept') || '').toLowerCase();
+  const contentType = (req.get('Content-Type') || '').toLowerCase();
+  const xreq = (req.get('X-Requested-With') || '').toLowerCase();
+  return accept.includes('application/json') ||
+         contentType.includes('application/json') ||
+         xreq === 'xmlhttprequest' ||
+         !!req.xhr;
+}
+
+// --- Auth routes ---
+const loginLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: { error: 'Too many login attempts, try again later.' }
+});
+
+app.post('/auth/login', loginLimiter, async (req, res) => {
+  try {
+    const username = (req.body && req.body.username) || '';
+    const password = (req.body && req.body.password) || '';
+
+    const wantsJson = isAjaxRequest(req);
+
+    if (!username || !password) {
+      console.warn('Login attempt with missing credentials');
+      if (wantsJson) return res.status(400).json({ error: 'username and password required' });
+      return res.redirect('/login.html?error=missing');
+    }
+
+    // Query user
+    let r;
+    try {
+      r = await db.pool.query('SELECT id, username, password_hash, full_name, role FROM users WHERE username = $1 LIMIT 1', [username]);
+    } catch (dbqErr) {
+      console.error('DB query error during login:', dbqErr);
+      if (wantsJson) return res.status(500).json({ error: 'Internal server error' });
+      return res.redirect('/login.html?error=server');
+    }
+
+    if (!r || r.rowCount === 0) {
+      console.warn('Login failed - user not found:', username);
+      if (wantsJson) return res.status(401).json({ error: 'Invalid username or password' });
+      return res.redirect('/login.html?error=invalid');
+    }
+
+    const user = r.rows[0];
+    let ok = false;
+    try {
+      ok = await bcrypt.compare(password, user.password_hash);
+    } catch (bcryptErr) {
+      console.error('bcrypt compare error:', bcryptErr);
+      if (wantsJson) return res.status(500).json({ error: 'Internal server error' });
+      return res.redirect('/login.html?error=server');
+    }
+
+    if (!ok) {
+      console.warn('Login failed - invalid password for user:', username);
+      if (wantsJson) return res.status(401).json({ error: 'Invalid username or password' });
+      return res.redirect('/login.html?error=invalid');
+    }
+
+    // Set session fields
+    req.session.userId = user.id;
+    req.session.username = user.username;
+    req.session.role = user.role || 'user';
+
+    // Save session to ensure cookie & session row persisted before responding
+    try {
+      await saveSession(req);
+    } catch (saveErr) {
+      console.error('Failed to save session before responding:', saveErr);
+      if (wantsJson) return res.status(500).json({ error: 'Failed to create session' });
+      return res.redirect('/login.html?error=server');
+    }
+
+    if (wantsJson) {
+      return res.json({ success: true, username: user.username, full_name: user.full_name });
+    } else {
+      return res.redirect('/');
+    }
+  } catch (err) {
+    console.error('POST /auth/login error', err);
+    const wantsJson = isAjaxRequest(req);
+    if (wantsJson) return res.status(500).json({ error: 'Internal server error' });
+    return res.redirect('/login.html?error=server');
+  }
+});
+
+app.post('/auth/logout', (req, res) => {
+  try {
+    req.session.destroy(err => {
+      if (err) {
+        console.error('Session destroy error', err);
+        return res.status(500).json({ error: 'Failed to logout' });
+      }
+      res.clearCookie(process.env.SESSION_COOKIE_NAME || 'connect.sid', { path: '/' });
+      res.json({ success: true });
+    });
+  } catch (err) {
+    console.error('POST /auth/logout error', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/auth/me', (req, res) => {
+  if (!req.session || !req.session.userId) return res.status(401).json({ loggedIn: false });
+  res.json({
+    loggedIn: true,
+    user: {
+      id: req.session.userId,
+      username: req.session.username,
+      role: req.session.role
+    }
+  });
+});
+
+// --- Authentication middleware ---
+const whitelistPrefixes = [
+  '/auth',
+  '/login.html',
+  '/login.css',
+  '/login.js',
+  '/favicon.ico',
+  '/static/',
+  '/assets/',
+  '/public/'
+];
+const allowedExtensions = ['.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.map', '.json'];
+
+app.use((req, res, next) => {
+  const lower = req.path.toLowerCase();
+  const isWhitelisted = whitelistPrefixes.some(p => lower.startsWith(p));
+  const extAllowed = allowedExtensions.some(ext => lower.endsWith(ext));
+  if (isWhitelisted || extAllowed) return next();
+  if (req.session && req.session.userId) return next();
+  if (req.method === 'GET') return res.redirect('/login.html');
+  return res.status(401).json({ error: 'authentication required' });
+});
+
+// Serve static files (after auth middleware)
 app.use(express.static(path.join(__dirname, 'public')));
 
 /* ===========================
-   Employees
+   Employees routes (unchanged)
    =========================== */
 
 // list employees
@@ -39,7 +245,7 @@ app.post('/api/employees', async (req, res) => {
     res.status(201).json({ id: result.rows[0].id });
   } catch (err) {
     console.error('POST /api/employees error', err);
-    if (err.code === '23505') return res.status(409).json({ error: 'employee_id already exists' });
+    if (err && err.code === '23505') return res.status(409).json({ error: 'employee_id already exists' });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -101,7 +307,7 @@ app.put('/api/employees/:id', async (req, res) => {
     res.json({ ok: true, employee: result.rows[0] });
   } catch (err) {
     console.error('PUT /api/employees/:id error', err);
-    if (err.code === '23505') return res.status(409).json({ error: 'employee_id already exists' });
+    if (err && err.code === '23505') return res.status(409).json({ error: 'employee_id already exists' });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -112,10 +318,7 @@ app.delete('/api/employees/:id', async (req, res) => {
     const id = parseInt(req.params.id, 10);
     if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid id' });
 
-    // Unassign assets first (optional): set assigned_to = NULL for assets assigned to this employee
     await db.run('UPDATE assets SET assigned_to = NULL WHERE assigned_to = $1', [id]);
-
-    // Then remove employee
     await db.run('DELETE FROM employees WHERE id = $1', [id]);
     res.json({ ok: true });
   } catch (err) {
@@ -125,13 +328,9 @@ app.delete('/api/employees/:id', async (req, res) => {
 });
 
 /* ===========================
-   Assets
+   Assets routes (unchanged)
    =========================== */
 
-/**
- * GET /api/assets
- * Return list of assets with joined employee info (assigned_name, assigned_employee_id)
- */
 app.get('/api/assets', async (req, res) => {
   try {
     const rows = await db.all(
@@ -147,10 +346,6 @@ app.get('/api/assets', async (req, res) => {
   }
 });
 
-/**
- * GET /api/assets/:id
- * Return single asset (joined) so UI can read laptop_details + assigned_name
- */
 app.get('/api/assets/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
@@ -173,16 +368,11 @@ app.get('/api/assets/:id', async (req, res) => {
   }
 });
 
-/**
- * POST /api/assets
- * Accepts optional laptop_details (JSON object) and persists it to assets.laptop_details (JSONB)
- */
 app.post('/api/assets', async (req, res) => {
   try {
     const { asset_number, serial_number, type, assigned_to, laptop_details } = req.body;
     if (!asset_number || !type) return res.status(400).json({ error: 'asset_number and type required' });
 
-    // Insert including laptop_details (will be stored as jsonb if the column is jsonb)
     const result = await db.run(
       'INSERT INTO assets (asset_number, serial_number, type, assigned_to, laptop_details) VALUES ($1, $2, $3, $4, $5) RETURNING id',
       [asset_number, serial_number || null, type, assigned_to || null, laptop_details || null]
@@ -191,12 +381,11 @@ app.post('/api/assets', async (req, res) => {
     res.status(201).json({ id: result.rows[0].id });
   } catch (err) {
     console.error('POST /api/assets error', err);
-    if (err.code === '23505') return res.status(409).json({ error: 'asset_number already exists' });
+    if (err && err.code === '23505') return res.status(409).json({ error: 'asset_number already exists' });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// update asset (full replace semantics), also persist laptop_details
 app.put('/api/assets/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
@@ -229,7 +418,7 @@ app.delete('/api/assets/:id', async (req, res) => {
 });
 
 /* ===========================
-   Search
+   Search (unchanged)
    =========================== */
 
 app.get('/api/search', async (req, res) => {
@@ -253,24 +442,25 @@ app.get('/api/search', async (req, res) => {
 });
 
 /* ===========================
-   SPA fallback + shutdown
+   SPA fallback + graceful shutdown
    =========================== */
 
-// Fallback to index.html for SPA routes (make sure public/index.html exists)
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
-// graceful shutdown
-process.on('SIGINT', async () => {
+// graceful shutdown: close DB pool on SIGINT / SIGTERM
+const shutdown = async () => {
   console.log('Shutting down, closing DB pool');
   try {
-    await db.pool.end();
+    if (db && db.pool) await db.pool.end();
   } catch (e) {
-    // ignore
+    console.error('Error closing DB pool', e);
   }
   process.exit(0);
-});
+};
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
 
 app.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);

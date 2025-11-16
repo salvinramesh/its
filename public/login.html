@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Login — ITS</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --card-w: 360px;
+      --brand-accent: #0b6b59;
+    }
+
+    html,body { height:100%; margin:0; }
+    body {
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: var(--bg);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .card {
+      background:white;
+      padding:28px;
+      border-radius:12px;
+      box-shadow:0 8px 28px rgba(10,20,30,0.08);
+      width: min(var(--card-w), calc(100% - 32px));
+      box-sizing: border-box;
+    }
+
+    /* brand area above the form */
+    .brand {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom: 16px;
+    }
+    .brand img {
+      height:44px;
+      width:auto;
+      display:block;
+    }
+    .brand .title {
+      font-size:20px;
+      font-weight:700;
+      color:#0f172a;
+      line-height:1;
+    }
+    .brand .subtitle {
+      display:block;
+      font-size:14px;
+      color:var(--brand-accent);
+      font-weight:700;
+      margin-top:2px;
+    }
+
+    h1 { 
+      font-size:20px; 
+      margin: 6px 0 12px; 
+      text-align:center;   /* added */
+    }
+
+    label { display:block; font-size:14px; color:#222; margin-top:8px; margin-bottom:6px; }
+    input {
+      width:100%;
+      padding:10px 12px;
+      border-radius:8px;
+      border:1px solid #e2e8f0;
+      margin:0;
+      font-size:14px;
+      box-sizing:border-box;
+      background:#fff;
+    }
+    button {
+      width:100%;
+      padding:10px;
+      margin-top:14px;
+      border-radius:8px;
+      border:0;
+      background:#0b79d0;
+      color:white;
+      font-weight:600;
+      cursor:pointer;
+      box-shadow: 0 6px 16px rgba(11,121,208,0.12);
+      font-size:15px;
+    }
+    button:active { transform: translateY(0); }
+
+    .error { color:#c72; margin-top:8px; font-size:13px; display:none; }
+    .note { color:#666; font-size:13px; margin-top:10px; text-align:center; }
+
+    /* small screens: reduce brand spacing */
+    @media (max-width:420px) {
+      .brand img { height:40px; }
+      .brand .title { font-size:18px; }
+      .card { padding:20px; border-radius:10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card" role="main" aria-labelledby="signin-heading">
+    <!-- brand: logo + ITS label -->
+    <div class="brand" role="banner" aria-hidden="false">
+      <img src="/actionfi.png" alt="Actionfi logo" />
+      <div>
+        <span class="title">ITS Inventory</span>
+      </div>
+    </div>
+
+    <h1 id="signin-heading">Sign in</h1>
+
+    <form id="loginForm" action="/auth/login" method="post" novalidate>
+      <label for="username">Username</label>
+      <input id="username" name="username" placeholder="Username" autocomplete="username" required />
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" placeholder="Password" autocomplete="current-password" required />
+
+      <button type="submit">Sign in</button>
+
+      <div id="err" class="error" aria-live="polite"></div>
+      <div class="note">Locked out? Contact the administrator.</div>
+    </form>
+  </div>
+
+  <!-- external script avoids CSP inline blocking -->
+  <script src="/login.js" defer></script>
+</body>
+</html>

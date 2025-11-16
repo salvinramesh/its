@@ -8,18 +8,161 @@
   <!-- Fonts & stylesheet -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css" />
+
   <style>
-    .actions-row {
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      margin-top:12px;
-      gap:12px;
+    /* -------------------------
+       Core layout tweaks (header + overall)
+       ------------------------- */
+    :root {
+      --header-gap: 20px;
+      --muted: #6b7280;
+      --search-bg: linear-gradient(180deg, #f7fffb, #f0fbf7);
+      --container-max: 1100px;
     }
 
-    .actions-left { display:flex; gap:12px; align-items:center; }
-    .actions-right { display:flex; gap:12px; align-items:center; }
+    html,body { height: 100%; }
 
+    body {
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      margin: 0;
+      color: #0f172a;
+      background: #fff;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* container keeps content centered on desktop */
+    .container {
+      max-width: var(--container-max);
+      margin: 0 auto;
+      padding: 18px;
+      box-sizing: border-box;
+    }
+
+    /* Header layout:
+       top-row (brand + mobile logout) | search-pill | header-right (desktop controls)
+    */
+    header.header {
+      display: flex;
+      align-items: center;
+      gap: var(--header-gap);
+      padding: 14px 0 20px 0;
+      position: relative;
+      z-index: 10;
+      flex-wrap: nowrap;
+    }
+
+    /* Top row wrapper (holds brand + mobile logout on one line) */
+    .top-row {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      gap: var(--header-gap);
+    }
+    .top-row .brand {
+      flex: 0 1 auto;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      text-decoration:none;
+      color:inherit;
+      font-weight:700;
+    }
+
+    /* Brand (left) */
+    .brand-logo { height:36px; width:auto; display:block; }
+
+    /* Search pill sits in the middle and grows */
+    .search-pill {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      flex: 1 1 480px; /* grow to fill available space */
+      max-width: 720px;
+      background: var(--search-bg);
+      border-radius: 42px;
+      padding: 10px 14px;
+      box-shadow: 0 8px 20px rgba(24,64,88,0.04), inset 0 1px 0 rgba(255,255,255,0.6);
+      border: 1px solid rgba(12, 74, 110, 0.04);
+      margin: 0 8px;
+      min-height:48px;
+    }
+    .search-pill input {
+      border: 0;
+      outline: none;
+      background: transparent;
+      flex: 1 1 auto;
+      padding: 8px 6px;
+      font-size: 15px;
+      color: #213547;
+    }
+    .search-pill button {
+      flex: 0 0 auto;
+      padding: 10px 18px;
+      border-radius: 20px;
+      border: 0;
+      cursor: pointer;
+      background: linear-gradient(#3aa0ff,#2078f0);
+      color: white;
+      font-weight:600;
+      box-shadow: 0 6px 18px rgba(32,120,240,0.12);
+      min-width: 84px;
+    }
+
+    /* Right side: username + logout (desktop controls) */
+    .header-right {
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex: 0 0 auto;
+      margin-left: auto; /* keep at far right */
+    }
+    .username-badge {
+      font-size:0.95rem;
+      color:#374151;
+      padding:8px 10px;
+      background:#fff;
+      border-radius:8px;
+      border:1px solid #e6e9ee;
+      display:none;
+      box-shadow: 0 2px 8px rgba(16,24,40,0.04);
+    }
+    .logout-btn {
+      padding:8px 12px;
+      border-radius:8px;
+      border:0;
+      cursor:pointer;
+      background:#ef4444;
+      color:#fff;
+      font-weight:600;
+      display:none; /* desktop logout hidden by default, JS toggles */
+      box-shadow:0 6px 12px rgba(239,68,68,0.12);
+    }
+    .logout-btn:hover { transform: translateY(-1px); }
+
+    /* Mobile-only logout element (shown only on phone, placed to the right of brand) */
+    .mobile-logout {
+      display: none; /* shown in mobile media query */
+      padding:8px 12px;
+      border-radius:8px;
+      border:0;
+      cursor:pointer;
+      background:#ef4444;
+      color:#fff;
+      font-weight:600;
+      box-shadow:0 6px 12px rgba(239,68,68,0.12);
+      font-size:14px;
+    }
+
+    /* Hero & Panels */
+    .hero { margin-top: 12px; }
+    .hero-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 8px 30px rgba(14, 30, 37, 0.04);
+    }
+    .hero-cta-group { display:flex; gap:12px; margin-top:10px; flex-wrap:wrap; }
     .btn-submit {
       padding:10px 16px;
       border-radius:10px;
@@ -29,28 +172,16 @@
       color:#fff;
       box-shadow: 0 6px 18px rgba(32,120,240,0.18);
       font-weight:600;
-      transition: transform 0.08s ease;
+      transition: transform .08s ease, box-shadow .08s ease;
     }
+    .btn-submit.brand { background: linear-gradient(#010101,#5c6764); box-shadow: 0 8px 24px rgba(6,14,18,0.08); }
+    .btn-submit:active { transform: translateY(0); box-shadow: 0 4px 12px rgba(32,120,240,0.12); }
 
-    .btn-submit:hover { transform: translateY(-1px); }
+    .panels { display:flex; gap:24px; margin-top:18px; align-items:flex-start; }
+    .panel { background:#fff; border-radius:12px; padding:18px; box-shadow: 0 8px 30px rgba(14, 30, 37, 0.03); flex:1; min-width:0; }
 
-    .btn-submit.brand {
-      background: linear-gradient(#010101,#5c6764);
-      box-shadow:0 8px 20px rgba(12,143,111,0.12);
-      color:#fff;
-    }
-
-    .btn-submit.plain {
-      background: #fff;
-      color: #111;
-      border: 1px solid #e6e9ee;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-    }
-
-    @media (max-width:900px) {
-      .actions-row { flex-direction: column; align-items:stretch; }
-      .actions-right { justify-content:flex-start; }
-    }
+    /* make inputs look consistent */
+    input, select, textarea { padding:10px; border-radius:8px; border:1px solid #e6e9ee; outline:none; width:100%; box-sizing:border-box; font-size:14px; background:#fff; }
 
     footer.site-footer {
       margin-top:40px;
@@ -58,25 +189,19 @@
       background: linear-gradient(180deg, rgba(245,250,255,0.8), rgba(255,255,255,0.6));
       border-top: 1px solid rgba(230,236,245,0.6);
     }
-    .site-footer .inner { max-width:1100px; margin:0 auto; padding:0 16px; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; }
-    .site-footer .brand { display:flex; gap:10px; align-items:center; font-weight:700; color:#0b6b59; text-decoration:none; }
-    .site-footer .links { display:flex; gap:16px; align-items:center; color:#4b5563; }
-    .site-footer a { color:inherit; text-decoration:none; }
-    .site-footer .small { color:#6b7280; font-size:0.95rem; }
 
     /* Modal overlay and box (centered) */
     ._modal-overlay-laptop,
     ._modal-overlay-asset {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(10, 12, 16, 0.45);
+      inset: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 5000;
+      background: rgba(10, 12, 16, 0.45);
+      z-index: 9999;
+      padding: 20px;
+      box-sizing: border-box;
     }
 
     ._modal {
@@ -84,115 +209,167 @@
       padding: 22px 24px;
       border-radius: 12px;
       min-width: 340px;
-      max-width: 700px;
-      width: 90%;
-      max-height: 90vh;
+      max-width: 900px;
+      width: 100%;
+      max-height: 92vh;
       overflow-y: auto;
       box-shadow: 0 12px 40px rgba(0,0,0,0.25);
       animation: fadeInUp 0.18s ease;
       font-family: Inter, system-ui, Arial;
+      box-sizing: border-box;
     }
 
-    ._modal h3 {
-      margin-top: 0;
-      margin-bottom: 12px;
-      font-size: 1.15rem;
-      color: #111827;
-    }
-
+    ._modal h3 { margin-top: 0; margin-bottom: 12px; font-size: 1.15rem; color: #111827; }
     ._modal .row { display: flex; gap: 12px; flex-wrap: wrap; }
     ._modal .col { flex: 1; display:flex; flex-direction:column; gap:6px; min-width:140px; }
     ._modal label { font-size:0.9rem; color:#374151; }
-    ._modal input, ._modal textarea, ._modal select {
-      padding:10px;
-      border-radius:8px;
-      border:1px solid #e6e9ee;
-      outline:none;
-      font-size:0.95rem;
-    }
 
-    /* FIX: make textarea match inputs and span width */
-    ._modal textarea {
-      width: 100%;
-      box-sizing: border-box;     /* include padding in width calculations */
-      min-height: 110px;          /* comfortable height */
-      padding: 10px 12px;
-      border-radius: 8px;
-      border: 1px solid #e6e9ee;
-      resize: vertical;
-      font-size: 14px;
-      background: #fff;
-      display: block;
-    }
+    ._modal textarea { width: 100%; box-sizing: border-box; min-height: 110px; padding: 10px 12px; border-radius: 8px; border: 1px solid #e6e9ee; resize: vertical; font-size: 14px; background: #fff; display: block; }
 
     ._modal .actions { display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
-    .btn-small { padding:8px 12px; border-radius:8px; cursor:pointer; border:0; font-size:0.95rem; }
-    .btn-small.primary { background:linear-gradient(#3aa0ff,#2078f0); color:#fff; }
-    .btn-small.plain { background:#fff; border:1px solid #e6e9ee; color:#111; }
 
     @keyframes fadeInUp {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* --- unified hero CTA button group --- */
-    .hero-cta-group {
-      display:flex;
-      gap:12px;
-      align-items:center;
-      justify-content:flex-start;
-      flex-wrap:wrap;
-      margin-top:6px;
+    /* -------------------------
+       Responsive adjustments
+       ------------------------- */
+    @media (max-width: 1100px) {
+      .container { padding: 14px; }
+      .search-pill { max-width: 520px; }
+      .brand-logo { height:32px; }
     }
 
-    .hero-cta-group .btn-submit {
-      padding: 10px 18px;
-      font-size: 15px;
+    /* Mobile: stack header vertically so search is full width */
+    @media (max-width: 700px) {
+      /* stack header elements */
+      header.header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding-bottom: 12px;
+      }
+
+      /* top-row becomes the first row: brand left, mobile logout right */
+      .top-row {
+        order: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+      }
+
+      .top-row .brand {
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* make mobile logout visible and aligned to right of brand */
+      .mobile-logout {
+        display: inline-block;
+      }
+
+      .search-pill {
+        order: 2;
+        margin: 0;
+        width: 100%;
+        flex: none;
+        align-self: center;
+      }
+
+      /* hide desktop username and desktop logout on mobile */
+      .username-badge { display: none !important; }
+      .logout-btn { display: none !important; }
+
+      .header-right { order: 3; margin-left: 0; justify-content: flex-end; }
+
+      /* hero CTAs become full width for easy tapping */
+      .hero-cta-group { gap: 12px; margin-top: 12px; }
+      .hero-cta-group .btn-submit { width: 100%; padding: 14px; border-radius: 12px; font-size: 16px; }
+
+      /*
+        -- MOBILE PANELS FIXES --
+        Make the panels full-width, remove forced min-width and ensure consistent side spacing.
+      */
+      .container { padding-left: 12px; padding-right: 12px; }
+      .panels { flex-direction: column; gap: 16px; margin-top: 14px; }
+      .panel {
+        width: 100%;
+        padding: 16px;
+        border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(14, 30, 37, 0.03);
+        min-width: 0;         /* important: allow shrinking */
+        box-sizing: border-box;
+        margin: 0;             /* avoid extra offsets */
+      }
+
+      /* make sure buttons and inputs are comfortable on mobile */
+      input, select, textarea { font-size: 15px; padding: 12px; }
+      .btn-submit { font-size: 15px; padding: 12px 14px; }
     }
 
-    @media (max-width:760px) {
-      .hero-cta-group { width:100%; gap:10px; }
-      .hero-cta-group .btn-submit { width:100%; box-sizing:border-box; }
+    /* ensure username visible on wide screens when JS toggles them */
+    @media (min-width: 701px) {
+      .username-badge[aria-hidden="false"] { display: inline-block; }
     }
 
-    /* --- logo alignment --- */
-    .brand-logo {
-      height: 34px;
-      width: auto;
-      margin-right: 10px;
-      vertical-align: middle;
+    /* subtle accessibility & focus styles */
+    input:focus, select:focus, textarea:focus, button:focus { box-shadow: 0 0 0 4px rgba(32,120,240,0.08); outline: none; }
+
+    /* small visual tweaks for footer layout to prevent breaking */
+    .site-footer .inner {
+      max-width: var(--container-max);
+      margin: 0 auto;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 18px;
+      box-sizing: border-box;
+      flex-wrap: wrap;
     }
-    .brand {
-      display:flex;
-      align-items:center;
-      gap:8px;
-      text-decoration:none;
-      color:inherit;
-      font-weight:700;
-    }
+    .site-footer .links { display:flex; gap:18px; align-items:center; }
+    .site-footer .small { color: #6b7280; font-size: 0.95rem; }
   </style>
 </head>
 <body>
   <div class="container">
 
     <!-- Header -->
-    <header class="header" style="align-items:flex-start;">
-      <a href="/" class="brand">
-        <img src="/actionfi.png" alt="Actionfi Logo" class="brand-logo" />
-        <span><span class="brand-accent">ITS</span> Inventory</span>
-      </a>
+    <header class="header" aria-label="Top header">
 
-      <div class="search-pill" role="search" style="max-width:520px;">
-        <span aria-hidden="true">🔍</span>
-        <input id="search_q_header" placeholder="Search assets or employees" />
-        <button id="searchBtnHeader" class="btn-submit" style="margin-left:8px;">Search</button>
+      <!-- Top row: brand (left) + mobile logout (right on phone) -->
+      <div class="top-row" aria-hidden="false">
+        <a href="/" class="brand" aria-label="ITS Inventory home">
+          <img src="/actionfi.png" alt="Actionfi Logo" class="brand-logo" />
+          <span><span class="brand-accent">ITS</span> Inventory</span>
+        </a>
+
+        <!-- mobile-only logout (visible on small screens, positioned to the right in top-row) -->
+        <button id="mobileLogoutBtn" class="mobile-logout" aria-hidden="true">Logout</button>
+      </div>
+
+      <!-- Search pill -->
+      <div class="search-pill" role="search" aria-label="Search assets or employees">
+        <span aria-hidden="true" style="font-size:18px">🔍</span>
+        <input id="search_q_header" placeholder="Search assets or employees" aria-label="Search query" />
+        <button id="searchBtnHeader" aria-label="Search">Search</button>
+      </div>
+
+      <!-- Right side: desktop username (visible on desktop) -->
+      <div class="header-right" aria-hidden="false" style="margin-left:auto;">
+        <div id="usernameDisplay" class="username-badge" aria-hidden="true">admin</div>
+        <!-- keep a desktop logout element (but hidden by default) in case you later want desktop logout -->
+        <button id="logoutBtn" class="logout-btn" aria-hidden="true">Logout</button>
       </div>
     </header>
 
     <!-- Hero -->
     <section class="hero" aria-label="Hero">
       <div class="hero-card">
-        <h1>Manage devices, effortlessly.</h1>
+        <h1 style="margin:0 0 8px; font-size:34px; line-height:1.02">Manage devices, effortlessly.</h1>
         <p class="lead" style="color:var(--muted);margin-bottom:16px">
           Add assets and employees quickly, assign equipment, and search across inventory with ease.
         </p>
@@ -201,7 +378,6 @@
           <button class="btn-submit" id="heroAction" type="button">Get Started</button>
           <button id="manageUsersBtn" class="btn-submit" type="button">Manage Users</button>
           <button id="manageAssetsBtn" class="btn-submit" type="button">Manage Assets</button>
-          <!-- NEW: Manage ISP button -->
           <button id="manageIspBtn" class="btn-submit" type="button" aria-label="Manage ISP (opens Google Sheet)">Manage ISP</button>
         </div>
       </div>
@@ -223,7 +399,7 @@
           <label for="emp_email">Email (optional)</label>
           <input id="emp_email" placeholder="Email" />
         </div>
-        <div class="actions-row">
+        <div class="actions-row" style="margin-top:12px;">
           <div class="actions-left">
             <button id="addEmpBtn" class="btn-submit brand" type="button">Add Employee</button>
           </div>
@@ -281,59 +457,59 @@
     <!-- Footer -->
     <footer class="site-footer" role="contentinfo">
       <div class="inner">
-        <a class="brand" href="/">
-          <img src="/actionfi.png" alt="Actionfi Logo" class="brand-logo" />
-          <span style="font-weight:800;color:#111827">ITS</span>
-          <span style="color:#111827"></span>
-        </a>
-        <div class="links" aria-hidden="false">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <a class="brand" href="/" style="gap:8px; text-decoration:none; color:inherit;">
+            <img src="/actionfi.png" alt="Actionfi Logo" class="brand-logo" />
+            <span style="font-weight:800;color:#111827">ITS</span>
+          </a>
+        </div>
+
+        <div class="links" aria-hidden="false" style="margin: 8px 0;">
           <a href="/users.html">Users</a>
           <a href="/assets.html">Assets</a>
           <a href="mailto:arunshaji@actionfi.com">Support</a>
         </div>
+
         <div class="small">© <span id="year"></span> Actionfi — Built for ITS</div>
       </div>
     </footer>
   </div>
 
-  <script src="/app.js"></script>
+  <!-- existing scripts -->
+  <script src="/app.js" defer></script>
+  <script src="/init.js" defer></script>
 
   <script>
-    // Google Sheet URL (opens in new tab)
-    const ISP_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1eTAyiWmdVjah4vgm_7C7_ULCBUeTh-Lh63LrSKrxMUE/edit?gid=0';
+    // Wire mobile logout & desktop logout to same endpoint
+    (function () {
+      const mobileLogout = document.getElementById('mobileLogoutBtn');
+      const desktopLogout = document.getElementById('logoutBtn');
 
-    document.getElementById('searchBtnHeader').addEventListener('click', () => {
-      const q = document.getElementById('search_q_header').value.trim();
-      if (!q) return;
-      window.location.href = '/search.html?q=' + encodeURIComponent(q);
-    });
-
-    document.getElementById('heroAction').addEventListener('click', (e) => {
-      e.preventDefault();
-      const empInput = document.getElementById('emp_id');
-      if (!empInput) return;
-      empInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setTimeout(() => empInput.focus(), 250);
-    });
-
-    document.getElementById('manageUsersBtn').addEventListener('click', () => window.location.href='/users.html');
-    document.getElementById('manageAssetsBtn').addEventListener('click', () => window.location.href='/assets.html');
-
-    // Manage ISP: open google sheet in a new tab
-    document.getElementById('manageIspBtn').addEventListener('click', () => {
-      // open in new tab with noopener/noreferer
-      window.open(ISP_SHEET_URL, '_blank', 'noopener,noreferrer');
-    });
-
-    document.getElementById('year').textContent = new Date().getFullYear();
-
-    document.addEventListener('click', ev => {
-      const t = ev.target;
-      if (!t.classList) return;
-      if (t.classList.contains('_modal-overlay-laptop') || t.classList.contains('_modal-overlay-asset')) {
-        t.remove();
+      async function doLogout() {
+        try {
+          await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin', headers: { 'Accept': 'application/json' } });
+        } catch (e) {
+          // ignore network errors - we'll still redirect
+          console.warn('logout failed', e);
+        } finally {
+          window.location.href = '/login.html';
+        }
       }
-    });
+
+      if (mobileLogout) {
+        mobileLogout.addEventListener('click', function (e) {
+          e.preventDefault();
+          doLogout();
+        });
+      }
+
+      if (desktopLogout) {
+        desktopLogout.addEventListener('click', function (e) {
+          e.preventDefault();
+          doLogout();
+        });
+      }
+    })();
   </script>
 </body>
 </html>
